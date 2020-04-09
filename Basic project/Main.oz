@@ -4,7 +4,8 @@ import
     Input
     PlayerManager
 define
-    % ...
+    GUIPORT
 in
-    % ...
+    GUIPORT = {GUI.portWindow}
+    {Send GUIPORT buildWindow}
 end

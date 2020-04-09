@@ -284,11 +284,8 @@ in
 		end
 	end
 
-	{BuildWindow}
-
-	{StartWindow}
-
 	
+
 
 	
 end
