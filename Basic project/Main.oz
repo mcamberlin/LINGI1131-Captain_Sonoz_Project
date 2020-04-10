@@ -39,7 +39,7 @@ define
 
     end
 in
-    {System.show 'Debut'}
+    {System.show 'Debut de la main'}
     %%%% 1 - Create the port for the GUI and launch its interface %%%%
     GUIPORT = {GUI.portWindow} %Create the port for the GUI
     {Send GUIPORT buildWindow} %Launch its interface
@@ -47,16 +47,9 @@ in
     %%%% 2 - Create the port for every player using the PlayerManager and assigne a unique id %%%%
     {CreatePlayer}
 
-    
-    
-
-    
-    
-
 
     %%%% 3 - Ask every player to set up (choose initial point at the surface) %%%%
 
     %%%% 4 - Launch the game in the correct mode %%%%
-
-    
+    {System.show 'Fin de la main'}
 end

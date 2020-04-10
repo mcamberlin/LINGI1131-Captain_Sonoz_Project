@@ -15,13 +15,14 @@ define
     X Y
     Move
     RandomPosition
+    IsIsland
 in
-    fun{RandomPosition}
-        X Y LookIsland in
-        /** LookIsland
-            verifie()    
-        */
-        fun{LookIsland X Y Map}
+    /** IsIsland
+        X, Y = position on the map
+        if the point(X,Y) is an island then true    
+        else false
+    */
+    fun{IsIsland X Y Map}
             case Map
             of H1|T1 then 
                 if(X ==1) then
@@ -34,30 +35,41 @@ in
                                 false
                             end
                         else
-                            {LookIsland X Y-1 T2}
+                            {IsIsland X Y-1 T2}
                         end
                     else
                         false
                     end
                 else
-                    {LookIsland X-1 Y T1}
+                    {IsIsland X-1 Y T1}
                 end
             else
                 false
             end
-        end          
+        end      
 
 
+    
+    
+    
+    
+    
+    /** RandomPosition
+        select a random position in water in the map
+    */
+    fun{RandomPosition}
+        X Y  in
         X = {OS.rand} mod Input.nRow+1
         {System.show X}
         Y = {OS.rand} mod Input.nColumn+1
         {System.show Y}
         %Check if on water
-        if {LookIsland X Y Input.map} then {RandomPosition}
+        if {IsIsland X Y Input.map} then {RandomPosition}
         else
             pt(x:X y:Y)
         end
     end
+
 
     fun{StartPlayer Color ID}
         Stream
@@ -79,8 +91,14 @@ in
     proc{TreatStream Stream State} 
         case Stream 
         of nil then skip
-        [] initPosition(ID Position)|T then {TreatStream T {InitPosition ID Position State}}
-        [] move(ID Position Direction)|T then {TreatStream T {Move ID Position Direction State}}
+        [] initPosition(ID Position)|T then 
+            {TreatStream T {InitPosition ID Position State}}
+        [] move(ID Position Direction)|T then 
+            {TreatStream T {Move ID Position Direction State}}
+        [] chargeItem(ID KindItem)|T then
+            {TreatStream T {ChargeItem ID KindItem State}}
+        else
+            skip
         end
     end
 
@@ -109,18 +127,172 @@ in
         Position
     end
     
-    %%%Move 
+    /** Move
+        ID = unbound
+        Position = unbound
+        Direction = unbound
+        State = current state of the submarine
+        state( id(id<idNum> color:<color> name:Name) 
+                position:<position> 
+                lastPosition:<position>
+                direction:<direction> 
+                surface: <true>|<false>
+                loads: load(mine:x missile:y drone:z sonar: u) 
+                weapons: weapons(mine:x missile:y drone:z sonar:u))
+    */ 
     fun{Move ID Position Direction State}
         NewState NewPosition in
         case Direction 
-            of surface then NewState = State  %What the fuck is surface ???
-            [] north then NewPosition = pt(x:Position.x-1 y:Position.y) NewState = {AdjoinList State [pos#NewPosition]}
-            [] east then NewPosition = pt(x:Position.x y:Position.y+1) NewState = {AdjoinList State [pos#NewPosition]}
-            [] south then NewPosition = pt(x:Position.x+1 y:Position.y) NewState = {AdjoinList State [pos#NewPosition]}
-            [] west then NewPosition = pt(x:Position.x y:Position.y-1) NewState = {AdjoinList State [pos#NewPosition]}
+            of surface then 
+                NewState = {AdjoinList State [surface#true]}  %What the fuck is surface ???
+            [] north then 
+                NewPosition = pt(x:(Position.x)-1 y:Position.y)
+                if(isIsland(NewPosition.x NewPosition.y))
+                    System.show('The direction selected correspond to an island')
+                else
+                    Position = pt(x:(Position.x)-1 y:Position.y) 
+                    NewState = {AdjoinList State [position#NewPosition]}
+                end
+            [] east then 
+                NewPosition = pt(x:(Position.x)-1 y:Position.y)
+                if(isIsland(NewPosition.x NewPosition.y))
+                    System.show('The direction selected correspond to an island')
+                else
+                    Position = pt(x:Position.x y:(Position.y)+1) 
+                    NewState = {AdjoinList State [position#NewPosition]}
+                end
+            [] south then 
+                NewPosition = pt(x:(Position.x)-1 y:Position.y)
+                if(isIsland(NewPosition.x NewPosition.y))
+                    System.show('The direction selected correspond to an island')
+                else
+                    Position = pt(x:(Position.x)+1 y:Position.y) 
+                    NewState = {AdjoinList State [position#NewPosition]}
+                end
+            [] west then 
+                NewPosition = pt(x:(Position.x)-1 y:Position.y)
+                if(isIsland(NewPosition.x NewPosition.y))
+                    System.show('The direction selected correspond to an island')
+                else
+                    Position = pt(x:Position.x y:(Position.y)-1) 
+                    NewState = {AdjoinList State [position#NewPosition]}
+                end
+            else
+                System.show('Direction unknown')
+                skip
+            end
+        end 
+        %Binding variables
+        ID = State.id
+        Direction = State.direction
+        %returning current state
+        NewState
+    end 
+
+    /** ChargeItem
+        ID = unbound ; KindItem = unbound
+        State = current state of the submarine
+        state( id(id<idNum> color:<color> name:Name) 
+                position:<position> 
+                lastPosition:<position>
+                direction:<direction> 
+                surface: <true>|<false>
+                loads: load(mine:x missile:y drone:z sonar: u) 
+                weapons: weapons(mine:x missile:y drone:z sonar:u))
+
+        if(the loader reaches te right number of loads given in the Input file) then
+            the id is bound
+            a new item is created by binding it with the arg
+            the player announce it 
+        else
+            the id is bound
+            the item has null value
+            increase the load by one one the item selected (mine, missile, drone or sonar)
+        return the new state of the submarine
+    */
+    fun{ChargeItem ID KindItem State}
+        NewState NewLoad in
+        case KindItem
+        of missile then
+            %Increase the loads of missile
+            {AdjoinList State.loads [missile#(State.loads.missile)+1)] NewLoad}
+
+            if(NewLoad.missile >= Input.missile) then 
+                local NewWeapons NewLoads in
+                    % new missile created: number of loading charges required to create a missile reached
+                    {AdjoinList State.loads [missile# (State.loads.missile - Input.missile)] NewLoads}
+                    {AdjoinList State.weapons [missile#(State.weapons.missile +1)] NewWeapons}
+                    
+                    {AdjoinList State [weapons#NewWeapons loads#Newloads] NewState}
+                end
+                
+                % the player should say that a new missile has been created by binding the given item
+                KindItem = missile
+                {System.show {Os.Append 'The number of missile has increased for player ' NewState.id.id}}
+            else
+                {AdjoinList State [loads#NewLoad] NewState}
+            end  
+
+        [] mine then
+            %Increase the loads of mine
+            {AdjoinList State.loads [mine# (State.loads.mine)+1] NewLoad}
+
+            if(NewLoad.mine >= Input.mine) then
+                local NewWeapons NewLoads in
+                    % new mine created: number of loading charges required to create a mine reached
+                    {AdjointList State.loads [mine# (State.loads.mine - Input.mine)] NewLoads}
+                    {AdjoinList State.weapons [mine# (State.weapons.mine+1)] NewWeapons}
+                   
+                    {AdjoinList State [weapons#NewWeapons loads#NewLoads] NewState}
+                end
+
+                % the player should say that a new item has been created by binding the given item
+                KindItem = mine
+                {System.show {Os.Append 'The number of mine has increased for player ' State.id.id}}
+            else
+                {AdjoinList State [loads#NewLoad] NewState} 
+            end       
+        [] sonar then 
+            %Increase the loads of sonar
+            {AdjoinList State.loads [sonar# (State.loads.sonar)+1] NewLoad}
+
+            if(NewLoad.sonar >= Input.sonar) then 
+                local NewWeapons NewLoads in
+                    % new sonar created: number of loading charges required to create a sonar reached
+                    {AdjoinList State.loads [sonar#(State.loads.sonar - Input.sonar)] NewLoads}
+                    {AdjoinList State.weapons [sonar#(State.weapons.sonar+1)] NewWeapons}
+
+                    {AdjoinList State [weapons#NewWeapons loads#NewLoads] NewState}
+                end
+
+                % the player should say that a new sonar has been created by binding the given item
+                KindItem = sonar
+                {System.show {Os.Append 'The number of sonar has increased for player ' State.id.id}}
+            else
+                {AdjoinList State [loads#NewLoad] NewState} 
+            end       
+        [] drone then
+            %Increase the loads of drone
+            {AdjoinList State.loads [drone# (State.loads.drone)+1] NewLoad}
+
+            if(NewLoad.drone >= Input.drone) then 
+                local NewWeapons NewLoads in
+                    % new drone created: number of loading charges required to create a drone reached    
+                    {AdjoinList State.loads [drone#(State.loads.drone - Input.drone)] NewLoads}
+                    {AdjoinList State.weapons [drone#(State.loads.drone+1)] NewWeapons}
+               
+                    {AdjoinList State [weapons#NewWeapons loads#NewLoads] NewState}
+                end
+                % the player should say that a new drone has been created by binding the given item
+                KindItem = drone
+                {System.show {Os.Append 'The number of drone has increased for player ' State.id.id}}
+            else
+                {AdjoinList State [loads#NewLoad] NewState} 
+            end   
+        else
+            skip
         end 
         ID = State.id
         NewState
     end
-
 end
