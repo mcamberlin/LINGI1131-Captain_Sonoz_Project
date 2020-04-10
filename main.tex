@@ -42,8 +42,22 @@
 \section{Stratégie de chaque joueur}
 
 \section{Conception et  choix d'implémentation}
+Le record \texttt{state} a été utilisé dans tout le code pour représenter l'état courant d'un sous-marin:
+\begin{itemize}
+    \item state ( 
+                \begin{itemize}
+                    \item id( id<idNum> color:<color> name:Name) 
+                    \item position: <position>
+                    \item lastPosition: <position>
+                    \item direction: <direction> 
+                    \item surface: <true> | <false>
+                    \item loads: load( mine: x missile: y drone: z sonar: u) 
+                    \item weapons: weapons( mine: x missile: y drone: z sonar:u)
+                    \\)
+                \end{itemize}
+\end{itemize}
 
-\section{Extension implémentée}
+\section{Extension(s) implémentée(s)}
 
 
 \end{document}
