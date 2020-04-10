@@ -85,7 +85,7 @@ in
    %%%% Players description %%%%
 
       NbPlayer = 2
-      Players = [player018basic1 player018basic2]
+      Players = [player018basic1 player018basic1]
       Colors = [yellow green]
       MaxDamage = 4
 
