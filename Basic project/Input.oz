@@ -1,103 +1,119 @@
 functor
 export
-   isTurnByTurn:IsTurnByTurn
-   nRow:NRow
-   nColumn:NColumn
-   map:Map
-   nbPlayer:NbPlayer
-   players:Players
-   colors:Colors
-   thinkMin:ThinkMin
-   thinkMax:ThinkMax
-   turnSurface:TurnSurface
-   maxDamage:MaxDamage
-   missile:Missile
-   mine:Mine
-   sonar:Sonar
-   drone:Drone
-   minDistanceMine:MinDistanceMine
-   maxDistanceMine:MaxDistanceMine
-   minDistanceMissile:MinDistanceMissile
-   maxDistanceMissile:MaxDistanceMissile
-   guiDelay:GUIDelay
+   %%%% description of the map %%%%
+      nRow:NRow
+      nColumn:NColumn
+      map:Map % Array of {0;1} ; 0 = water; 1 = island
+      
+   %%%% Players %%%%
+      nbPlayer:NbPlayer
+      players:Players %describe the type of player: AI or Human
+      colors:Colors
+      maxDamage:MaxDamage %max damage before the submarine is destroyed
+      
+   %%%% loading parameters %%%%
+      missile:Missile
+      mine:Mine
+      sonar:Sonar
+      drone:Drone
+
+   %%%% Bounds of distances for weapons according to Manhattan distances: D = |x1 - x2| + |y1-y2| %%%%
+      minDistanceMine:MinDistanceMine
+      maxDistanceMine:MaxDistanceMine
+      minDistanceMissile:MinDistanceMissile
+      maxDistanceMissile:MaxDistanceMissile
+
+   %%%% Thinking parameters (for simultaneous mode only) %%%%
+      thinkMin:ThinkMin %minimum time [ms] used when thinking
+      thinkMax:ThinkMax %maximum time [ms] used when thinking
+      
+   %%%% Others %%%%
+      isTurnByTurn:IsTurnByTurn %true = turn-by-turn mode; false = simultaneous mode
+      turnSurface:TurnSurface %the number of turns (in turn-by-turn mode) or the number of seconds (in simultaneous mode) the submarine has to wait before continuing playing 
+      guiDelay:GUIDelay %time between each GUI effects
+
 define
    IsTurnByTurn
+
    NRow
    NColumn
    Map
+
    NbPlayer
    Players
    Colors
-   ThinkMin
-   ThinkMax
-   TurnSurface
    MaxDamage
+   
+   TurnSurface
+   
    Missile
    Mine
    Sonar
    Drone
+
    MinDistanceMine
    MaxDistanceMine
    MinDistanceMissile
    MaxDistanceMissile
+
+   ThinkMin
+   ThinkMax
+
    GUIDelay
 in
 
-%%%% Style of game %%%%
+   %%%% Style of game %%%%
 
-   IsTurnByTurn = true
+      IsTurnByTurn = true
 
-%%%% Description of the map %%%%
+   %%%% Description of the map %%%%
 
-   NRow = 10
-   NColumn = 10
+      NRow = 10
+      NColumn = 10
 
-   Map = [[0 0 0 0 0 0 0 0 0 0]
-	  [0 0 0 0 0 0 0 0 0 0]
-	  [0 0 0 1 1 0 0 0 0 0]
-	  [0 0 1 1 0 0 1 0 0 0]
-	  [0 0 0 0 0 0 0 0 0 0]
-	  [0 0 0 0 0 0 0 0 0 0]
-	  [0 0 0 1 0 0 1 1 0 0]
-	  [0 0 1 1 0 0 1 0 0 0]
-	  [0 0 0 0 0 0 0 0 0 0]
-	  [0 0 0 0 0 0 0 0 0 0]]
+      Map = [[0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 1 1 0 0 0 0 0]
+      [0 0 1 1 0 0 1 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 1 0 0 1 1 0 0]
+      [0 0 1 1 0 0 1 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]]
 
-%%%% Players description %%%%
+   %%%% Players description %%%%
 
-   NbPlayer = 2
-   Players = [player1 player2]
-   Colors = [yellow green]
+      NbPlayer = 2
+      Players = [player1 player2]
+      Colors = [yellow green]
+      MaxDamage = 4
 
-%%%% Thinking parameters (only in simultaneous) %%%%
+   %%%% Surface time/turns %%%%
 
-   ThinkMin = 500
-   ThinkMax = 3000
+      TurnSurface = 3
 
-%%%% Surface time/turns %%%%
+   %%%% Number of load for each item %%%%
 
-   TurnSurface = 3
+      Missile = 3
+      Mine = 3
+      Sonar = 3
+      Drone = 3
 
-%%%% Life %%%%
+   %%%% Distances of placement %%%%
 
-   MaxDamage = 4
+      MinDistanceMine = 1
+      MaxDistanceMine = 2
+      MinDistanceMissile = 1
+      MaxDistanceMissile = 4
 
-%%%% Number of load for each item %%%%
+   %%%% Thinking parameters (only in simultaneous) %%%%
 
-   Missile = 3
-   Mine = 3
-   Sonar = 3
-   Drone = 3
+      ThinkMin = 500
+      ThinkMax = 3000
 
-%%%% Distances of placement %%%%
+   %%%% Waiting time for the GUI between each effect %%%%
 
-   MinDistanceMine = 1
-   MaxDistanceMine = 2
-   MinDistanceMissile = 1
-   MaxDistanceMissile = 4
-
-%%%% Waiting time for the GUI between each effect %%%%
-
-   GUIDelay = 500 % ms
+      GUIDelay = 500 % ms
 
 end

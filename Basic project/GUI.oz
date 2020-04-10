@@ -35,7 +35,9 @@ define
 	UpdateLife
 in
 
-%%%%% Build the initial window and set it up (call only once)
+/** BuildWindow 
+	Build and launch the initial window with no player on it (call only once) 
+*/
 	fun{BuildWindow}
 		Grid GridScore Toolbar Desc DescScore Window
 	in
@@ -69,17 +71,17 @@ in
 		handle(grid:Grid score:GridScore)
 	end
 
-%%%%% Squares of water and island
+%%%%% Squares of water and island %%%%%
 	Squares = square(0:label(text:"" width:1 height:1 bg:c(102 102 255))
 			 1:label(text:"" borderwidth:5 relief:raised width:1 height:1 bg:c(153 76 0))
 			)
 
-%%%%% Labels for rows and columns
+%%%%% Labels for rows and columns %%%%%
 	fun{Label V}
 		label(text:V borderwidth:5 relief:raised bg:c(255 51 51) ipadx:5 ipady:5)
 	end
 
-%%%%% Function to draw the map
+%%%%% Function to draw the map %%%%%
 	proc{DrawMap Grid}
 		proc{DrawColumn Column M N}
 			case Column
@@ -100,8 +102,8 @@ in
 	in
 		{DrawRow Map 1}
 	end
-
-%%%%% Init the submarine
+ 
+%%%%% Init the submarine %%%%%
 	fun{DrawSubmarine Grid ID Position}
 		Handle HandlePath HandleScore X Y Id Color LabelSub LabelScore
 	in
@@ -240,6 +242,9 @@ in
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+	/** StartWindow
+		Create a port for the GUI
+	 */
 	fun{StartWindow}
 		Stream
 		Port
@@ -271,21 +276,16 @@ in
 			{TreatStream T Grid {StateModification Grid ID State {RemoveMine Position}}}
 		[] surface(ID)|T then
 			{TreatStream T Grid {StateModification Grid ID State RemovePath}}
-		[] removePlayer(ID)|T then
-			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] explosion(ID Position)|T then
 			{TreatStream T Grid State}
 		[] drone(ID Drone)|T then
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then
 			{TreatStream T Grid State}
+		[] removePlayer(ID)|T then
+			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] _|T then
 			{TreatStream T Grid State}
 		end
 	end
-
-	
-
-
-	
 end
