@@ -1,7 +1,7 @@
 /* 
 Command in the terminal
     Compiling
-        ozc -c Input.oz GUI.oz Main.oz Player.oz PlayerManager.oz
+        ozc -c Input.oz GUI.oz Main.oz Player018Basic1.oz Player018Basic2.oz PlayerManager.oz
     Executing
         ozengine Main.ozf 
 */
@@ -12,14 +12,25 @@ import
     PlayerManager
 define
     GUIPORT
+
+    /*
+    fun {GeneratePlayers NbPlayers}
+    {
+        if(NbPlayers > 0)
+        {
+            {PlayerManager.playerGenerator Input.players Input.colors 1}
+            
+        }
+    }
+     */
 in
-    %Setting up config
 
     %%%% 1 - Create the port for the GUI and launch its interface %%%%
     GUIPORT = {GUI.portWindow} %Create the port for the GUI
     {Send GUIPORT buildWindow} %Launch its interface
 
     %%%% 2 - Create the port for every player using the PlayerManager and assigne a unique id %%%%
+
     
     {PlayerManager.playerGenerator Input.players Input.colors 1}
 
