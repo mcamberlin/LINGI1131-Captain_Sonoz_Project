@@ -244,6 +244,7 @@ in
 
 	/** StartWindow
 		Create a port for the GUI
+		Launch a thread to treat the stream of the port just created
 	 */
 	fun{StartWindow}
 		Stream

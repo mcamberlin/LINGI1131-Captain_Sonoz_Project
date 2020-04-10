@@ -25,8 +25,10 @@ in
         Port
     end
 
-    /*Stream = le stream de donnée entrant 
-    State = un tuple contenant (id score submarine mines path lastPos)*/
+    /** TreatStream
+        Stream = a stream of input data for the player
+        State = a tuple including (id score submarine mines path lastPos)
+    */
     proc{TreatStream Stream State} 
         case Stream 
         of nil then skip
@@ -58,7 +60,6 @@ in
     end
     
     %%%Move 
-
     fun{Move ID Position Direction State}
         NewState NewPosition in
         case Direction 

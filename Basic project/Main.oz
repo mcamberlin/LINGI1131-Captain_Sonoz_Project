@@ -16,11 +16,12 @@ in
     %Setting up config
 
     %%%% 1 - Create the port for the GUI and launch its interface %%%%
-    GUIPORT = {GUI.portWindow}
-
-    {Send GUIPORT buildWindow}
+    GUIPORT = {GUI.portWindow} %Create the port for the GUI
+    {Send GUIPORT buildWindow} %Launch its interface
 
     %%%% 2 - Create the port for every player using the PlayerManager and assigne a unique id %%%%
+    
+    {PlayerManager.playerGenerator Input.players Input.colors 1}
 
     %%%% 3 - Ask every player to set up (choose initial point at the surface) %%%%
 
