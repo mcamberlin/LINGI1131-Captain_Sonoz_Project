@@ -16,6 +16,42 @@ define
     Move
     RandomPosition
 in
+
+    fun{StartPlayer Color ID}
+        Stream
+        Port
+        InitialState
+    in
+        {NewPort Stream Port}
+        InitialState = state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false)
+        thread
+            {TreatStream Stream InitialState}
+        end
+        Port
+    end
+
+    /** TreatStream
+        Stream = a stream of input data for the player
+        State = a record including (id score submarine mines path lastPos)
+    */
+    proc{TreatStream Stream State} 
+        case Stream 
+        of nil then skip
+        [] initPosition(ID Position)|T then {TreatStream T {InitPosition ID Position State}}
+        [] move(ID Position Direction)|T then {TreatStream T {Move ID Position Direction State}}
+        [] dive|T then {TreatStream T {Dive}}
+        end
+    end
+
+    %%%InitPosition
+
+    /*le joueur doit choisir sa position initiale en liant son id à ID et sa position à Position. */
+    fun{InitPosition ID Position State}
+        ID = State.id
+        Position = {RandomPosition} %{AskPosition}%pt(x:1 y:1) si mon truc fonctionne pas :(
+        {AdjoinList State [position#Position]} %return le nouvel etat
+    end
+
     fun{RandomPosition}
         X Y LookIsland in
         /** LookIsland
@@ -49,51 +85,12 @@ in
 
 
         X = {OS.rand} mod Input.nRow+1
-        {System.show X}
         Y = {OS.rand} mod Input.nColumn+1
-        {System.show Y}
         %Check if on water
         if {LookIsland X Y Input.map} then {RandomPosition}
         else
             pt(x:X y:Y)
         end
-    end
-
-    fun{StartPlayer Color ID}
-        Stream
-        Port
-        InitialState
-    in
-        {NewPort Stream Port}
-        InitialState = state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1)))
-        thread
-            {TreatStream Stream InitialState}
-        end
-        Port
-    end
-
-    /** TreatStream
-        Stream = a stream of input data for the player
-        State = a record including (id score submarine mines path lastPos)
-    */
-    proc{TreatStream Stream State} 
-        case Stream 
-        of nil then skip
-        [] initPosition(ID Position)|T then {TreatStream T {InitPosition ID Position State}}
-        [] move(ID Position Direction)|T then {TreatStream T {Move ID Position Direction State}}
-        end
-    end
-
-    %%%InitPosition
-
-    /*le joueur doit choisir sa position initiale en liant son id à ID et sa position à Position. */
-    fun{InitPosition ID Position State}
-        {System.show 'Initposition 0'}
-        ID = State.id
-        {System.show 'Init Position apres id'}
-        Position = {RandomPosition} %{AskPosition}%pt(x:1 y:1) si mon truc fonctionne pas :(
-        {System.show 'InitPosition'}
-        {AdjoinList State [position#Position]} %return le nouvel etat
     end
 
     /*Ouvre une fenetre pour demander la position initiale */
@@ -122,5 +119,53 @@ in
         ID = State.id
         NewState
     end
+
+    /** Dive */
+    fun{Dive}
+        {AdjoinList State [dive#true]}
+    end
+
+    /**chargeItem(ID KindItem)*/
+
+
+    /**fireItem(Item KindItem) */
+
+
+    /**fireMine(ID Mine) */
+
+
+    /**isMove */
+
+
+    /**sayMove */
+
+
+    /**saySurface */
+
+
+    /**sayCharge */
+
+    /**sayMinedPlaced */
+
+    /**sayMissileExplode */
+
+
+    /**sayMineExpllosed */
+
+    /**sayPassingDrone */
+
+    /**sayAnswerDrone */
+
+    /**sayPassingDrone */
+
+    /**sayAnswerDrone */
+
+    /**sayPassingSonar */
+
+    /**sayAnswerSonar */
+
+    /**sayDeath */
+
+    /**sayDamageTaken */
 
 end

@@ -31,8 +31,6 @@ define
         {Wait ID2}
         {Wait Position1}
         {Wait Position2}
-        
-        {System.show 'Apres Wait'}
 
         {Send GUIPORT initPlayer(ID1 Position1)}
         {Send GUIPORT initPlayer(ID2 Position2)}
