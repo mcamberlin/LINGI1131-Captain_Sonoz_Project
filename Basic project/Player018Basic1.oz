@@ -4,9 +4,11 @@ state( id(id<idNum> color:<color> name:Name)
                 lastPosition:<position>
                 direction:<direction> 
                 surface: <true>|<false>
-                loads: load(mine:x missile:y drone:z sonar: u) 
+                dive: <true>|<false>
+                loads: loads(mine:x missile:y drone:z sonar: u) 
                 weapons: weapons(mine:x missile:y drone:z sonar:u))
 */
+%http://mozart2.org/mozart-v1/doc-1.4.0/tutorial/node3.html
 functor
 import
     Input
@@ -16,15 +18,31 @@ import
 export
     portPlayer:StartPlayer
 define
-    StartPlayer
-    TreatStream
+
     InitPosition
-    State
-    AskPosition
-    X Y
     Move
+    Dive
+    ChargeItem 
+    FireItem
+    FireMine
+    IsDead
+    SayMove
+    SaySurface
+    SayCharge
+    SayMinePlaced
+    SayMissileExplode
+    SayMineExplode
+    SayPassingDrone
+    SayAnwserDrone
+    SayPassingSonar
+    SayAnswerSonar 
+    SayDeath
+    SayDamageTaken
+
     RandomPosition
     IsIsland
+    StartPlayer
+    TreatStream
 in
     /** InitPosition
         ID = unbound; Position= unbound
@@ -64,7 +82,7 @@ in
                 NewState = {AdjoinList State [surface#true]}  %What the fuck is surface ???
             [] north then 
                 NewPosition = pt(x:(Position.x)-1 y:Position.y)
-                if(isIsland(NewPosition.x NewPosition.y))
+                if(isIsland(NewPosition.x NewPosition.y)) then
                     System.show('The direction selected correspond to an island')
                 else
                     Position = pt(x:(Position.x)-1 y:Position.y) 
@@ -72,7 +90,7 @@ in
                 end
             [] east then 
                 NewPosition = pt(x:(Position.x)-1 y:Position.y)
-                if(isIsland(NewPosition.x NewPosition.y))
+                if(isIsland(NewPosition.x NewPosition.y)) then
                     System.show('The direction selected correspond to an island')
                 else
                     Position = pt(x:Position.x y:(Position.y)+1) 
@@ -80,7 +98,7 @@ in
                 end
             [] south then 
                 NewPosition = pt(x:(Position.x)-1 y:Position.y)
-                if(isIsland(NewPosition.x NewPosition.y))
+                if(isIsland(NewPosition.x NewPosition.y)) then
                     System.show('The direction selected correspond to an island')
                 else
                     Position = pt(x:(Position.x)+1 y:Position.y) 
@@ -88,7 +106,7 @@ in
                 end
             [] west then 
                 NewPosition = pt(x:(Position.x)-1 y:Position.y)
-                if(isIsland(NewPosition.x NewPosition.y))
+                if(isIsland(NewPosition.x NewPosition.y)) then
                     System.show('The direction selected correspond to an island')
                 else
                     Position = pt(x:Position.x y:(Position.y)-1) 
@@ -132,7 +150,7 @@ in
         case KindItem
         of missile then
             %Increase the loads of missile
-            {AdjoinList State.loads [missile#(State.loads.missile)+1)] NewLoad}
+             {AdjoinList State.loads [missile#(State.loads.missile+1)] NewLoad}
 
             if(NewLoad.missile >= Input.missile) then 
                 local NewWeapons NewLoads in
@@ -152,7 +170,7 @@ in
 
         [] mine then
             %Increase the loads of mine
-            {AdjoinList State.loads [mine# (State.loads.mine)+1] NewLoad}
+            {AdjoinList State.loads [mine# (State.loads.mine+1)] NewLoad}
 
             if(NewLoad.mine >= Input.mine) then
                 local NewWeapons NewLoads in
@@ -171,7 +189,7 @@ in
             end       
         [] sonar then 
             %Increase the loads of sonar
-            {AdjoinList State.loads [sonar# (State.loads.sonar)+1] NewLoad}
+            {AdjoinList State.loads [sonar# (State.loads.sonar+1)] NewLoad}
 
             if(NewLoad.sonar >= Input.sonar) then 
                 local NewWeapons NewLoads in
@@ -190,7 +208,7 @@ in
             end       
         [] drone then
             %Increase the loads of drone
-            {AdjoinList State.loads [drone# (State.loads.drone)+1] NewLoad}
+            {AdjoinList State.loads [drone# (State.loads.drone+1)] NewLoad}
 
             if(NewLoad.drone >= Input.drone) then 
                 local NewWeapons NewLoads in
@@ -221,60 +239,68 @@ in
         state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
         Comprend pas comment envoyer un item....
      */
-    fun{FireItem ID KindFire State}
-       if State.mine >= Input.mine then 
+    /* fun{FireItem ID KindFire State}
+        if State.mine >= Input.mine then 
 
-       elseif State.missile >= Input.missile then ...
+        else if State.missile >= Input.missile then ...
 
-       elseif State.drone >= Input.drone then ...
+        else if State.drone >= Input.drone then ...
 
-       elseif State.sonar >= Input.sonar then ...
+        else if State.sonar >= Input.sonar then ...
 
-       else ID=State.id KindFire=null State
+        else ID=State.id KindFire=null State
+        end
     end
+    */
 
-    fun{Mine Position State}
+    /** FireMine(ID Mine) 
+    */
 
-    end
+    /** IsDead
+    
+    */
 
-    /** FireMine(ID Mine) */
-
-
-
-
-    /**isMove */
-
-
-    /**sayMove */
+    /** SayMove 
+    */
 
 
-    /**saySurface */
+    /** SaySurface 
+    */
 
 
-    /**sayCharge */
+    /** SayCharge 
+    */
 
-    /**sayMinedPlaced */
+    /** SayMinedPlaced 
+    */
 
-    /**sayMissileExplode */
+    /** SayMissileExplode 
+    */
 
 
-    /**sayMineExpllosed */
+    /** SayMineExplode 
+    */
 
-    /**sayPassingDrone */
+    /** SayPassingDrone 
+    */
 
-    /**sayAnswerDrone */
+    /** SayAnswerDrone 
+    */
 
-    /**sayPassingDrone */
+    /** SayPassingDrone 
+    */
 
-    /**sayAnswerDrone */
+    /** SayPassingSonar 
+    */
 
-    /**sayPassingSonar */
+    /** SayAnswerSonar 
+    */
 
-    /**sayAnswerSonar */
+    /** SayDeath 
+    */
 
-    /**sayDeath */
-
-    /**sayDamageTaken */
+    /** SayDamageTaken 
+    */
 
 
    /** IsIsland
@@ -328,16 +354,25 @@ in
         InitialState
     in
         {NewPort Stream Port}
-        InitialState = state(id:id(id:ID color:Color name:Name) position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
-        /**
-        un état State est représenté comme suit : 
-        - id = identifiant du joueur 
-        - position = position sur la grille
-        - dive = booleen indiquant si il peut plonger ou pas
-        - mine = nbre de mine dispo
-        - missile = nbre de missile dispo
-        - drone = nbre de drone dispo 
-        - sonar = nbre de sonar dispo  */
+        InitialState = state(id: id(id:ID color:Color name:Name) 
+                            position: pt(x:1 y:1) 
+                            lastPosition: nil 
+                            direction: east
+                            surface: true
+                            dive: false 
+                            loads: loads(mine:0 missile:0 drone:0 sonar:0)
+                            weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
+                            )
+        /** State
+            state( id(id<idNum> color:<color> name:Name) 
+                position:<position> 
+                lastPosition:<position>
+                direction:<direction> 
+                surface: <true>|<false>
+                dive: <true>|<false>
+                loads: loads(mine:x missile:y drone:z sonar: u) 
+                weapons: weapons(mine:x missile:y drone:z sonar:u))
+        */
         thread
             {TreatStream Stream InitialState}
         end
@@ -359,7 +394,7 @@ in
             {TreatStream T {Dive State}}
         [] chargeItem(ID KindItem)|T then
             {TreatStream T {ChargeItem ID KindItem State}}
-        [] fireItem(ID FireItem}|T then 
+        [] fireItem(ID FireItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
         else
             skip
