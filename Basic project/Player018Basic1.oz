@@ -23,7 +23,16 @@ in
         InitialState
     in
         {NewPort Stream Port}
-        InitialState = state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false)
+        InitialState = state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
+        /**
+        un état State est représenté comme suit : 
+        - id = identifiant du joueur 
+        - position = position sur la grille
+        - dive = booleen indiquant si il peut plonger ou pas
+        - mine = nbre de mine dispo
+        - missile = nbre de missile dispo
+        - drone = nbre de drone dispo 
+        - sonar = nbre de sonar dispo  */
         thread
             {TreatStream Stream InitialState}
         end
@@ -39,7 +48,8 @@ in
         of nil then skip
         [] initPosition(ID Position)|T then {TreatStream T {InitPosition ID Position State}}
         [] move(ID Position Direction)|T then {TreatStream T {Move ID Position Direction State}}
-        [] dive|T then {TreatStream T {Dive}}
+        [] dive|T then {TreatStream T {Dive State}}
+        [] fireItem|T then {TreatStream T {FireItem Item KindItem State}}
         end
     end
 
@@ -121,17 +131,37 @@ in
     end
 
     /** Dive */
-    fun{Dive}
+    fun{Dive State}
         {AdjoinList State [dive#true]}
     end
 
     /**chargeItem(ID KindItem)*/
 
 
-    /**fireItem(Item KindItem) */
+    /**fireItem(ID KindItem)
+        permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
+        state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
+        Comprend pas comment envoyer un item....
+     */
+    fun{FireItem ID KindFire State}
+       if State.mine >= Input.mine then 
 
+       elseif State.missile >= Input.missile then ...
+
+       elseif State.drone >= Input.drone then ...
+
+       elseif State.sonar >= Input.sonar then ...
+
+       else ID=State.id KindFire=null State
+    end
+
+    fun{Mine Position State}
+
+    end
 
     /**fireMine(ID Mine) */
+
+
 
 
     /**isMove */
