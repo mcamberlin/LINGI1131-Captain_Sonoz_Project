@@ -280,8 +280,12 @@ in
     */
 
     /** IsDead
-    
+    the player is dead if his damage is greater than Input.maxDamage
     */
+    fun{IsDead Answer State}
+        Answer = State.damage >= maxDamage
+        State
+    end 
 
     /** SayMove 
     */
@@ -383,6 +387,7 @@ in
                             direction: east
                             surface: true
                             dive: false 
+                            damage:0
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
                             )
@@ -393,6 +398,7 @@ in
                 direction:<direction> 
                 surface: <true>|<false>
                 dive: <true>|<false>
+                damage:d
                 loads: loads(mine:x missile:y drone:z sonar: u) 
                 weapons: weapons(mine:x missile:y drone:z sonar:u))
         */
@@ -419,6 +425,8 @@ in
             {TreatStream T {ChargeItem ID KindItem State}}
         [] fireItem(ID FireItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
+        [] isDead(Answer)|T then 
+            {TreatStream T {IsDead Answer State}}
         else
             skip
         end
