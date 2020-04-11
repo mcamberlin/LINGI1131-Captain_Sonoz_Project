@@ -236,7 +236,43 @@ in
         Comprend pas comment envoyer un item....
      */
     fun{FireItem ID KindFire State}
-        ID=State.id KindFire=null State
+        /*
+        1. check wich item is available
+        2. fire the item by decreasing the specific weapon 
+        3. Bind ID and KindFire to the weapon   Comment demander position????
+        */
+        NewState NewWeapon in
+        if State.weapons.mine > 0 then
+            NewWeapon = {AdjoinList State.weapons [mine#State.weapons.mine-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            FireItem = mine({RandomPosition})        %Demander position ???????????????
+            NewState
+        elseif State.weapons.missile > 0 then
+            NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            FireItem = missile({RandomPosition})        %Demander position ???????????????
+            NewState
+
+        elseif State.weapons.drone > 0 then
+            NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            FireItem = drone(row 1)       %Demander position ???????????????
+            NewState
+
+        elseif State.weapons.sonar > 0 then
+            NewWeapon = {AdjoinList State.weapons [sonar#State.weapons.sonar-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            FireItem = sonar
+            NewState
+
+        else 
+            KindFire = null
+            State
+        end
     end
     
 

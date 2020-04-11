@@ -1,7 +1,6 @@
 functor
 import
 	Player018Basic1
-	Player018Basic2
 export
 	playerGenerator:PlayerGenerator
 define
