@@ -46,23 +46,42 @@ define
             nil
         end
     end
-/*
-    proc{TurnByTurn NbPlayerRemaining}
 
+    proc{TurnByTurn NbPlayerRemaining}
+        case PLAYER_PORTS 
+        of H|T then %H is the number of the port for the player
+            % nous avons acces seulement au port du joueur, donc nous pouvons juste lui envoyer les messages qui sont fait dans Player
+            
+            %1. check if the su
+            {Send H saySurface(ID)}
+            {Wait ID}
+            if ID \= nil then          % the submarine is underwater and its id is ID
+                %2. ....
+
+
+
+            else                       % the submarine is at surface 
+
+            end
+
+        else %end of the turn, everyone played 
+            {Simultaneous}
+        end
 
     end
 
     proc{Simultaneous}
+        skip
     end
 
     proc{LaunchGame}
         if(Input.isTurnByTurn) then
-            {TurnByTurn}
+            {TurnByTurn Input.nbPlayer}
         else
             {Simultaneous}
         end
     end
-*/
+
 
 in
     {System.show 'Start'}
@@ -76,7 +95,7 @@ in
 
     %%%% 4 - Launch the game in the correct mode %%%%
 
-    /*{LaunchGame}*/
+    {LaunchGame}
 
     {System.show 'Stop'}
 end

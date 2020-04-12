@@ -353,6 +353,10 @@ in
 
     /** SayMove 
     */
+    fun{SayMove ID Direction State}
+        {System.show {OS.Append {OS.Append {OS.Append 'The player ' ID} 'moved to the '} Direction}}
+        State
+    end
 
 
     /** SaySurface 
@@ -360,11 +364,13 @@ in
     fun{SaySurface ID State}
         if(State.surface) then 
             {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' has made surface.'}}
+            ID = nil
         else 
             {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' is underwater.'}}
+            ID = State.id
         end
 
-        ID = State.id
+        
         State
     end
 
@@ -647,10 +653,12 @@ in
             {TreatStream T {ChargeItem ID KindItem State}}
         [] fireItem(ID FireItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
-        %[] firemine(ID Mine)|T then
+        [] firemine(ID Mine)|T then
+            {TreatStream T {FireMine ID Mine State}}
         [] isDead(Answer)|T then 
             {TreatStream T {IsDead Answer State}}
-        %[] sayMove(ID Direction)|T then
+        [] sayMove(ID Direction)|T then
+            {TreatStream T {SayMove ID Direction State}}
         [] saySurface(ID)|T then
             {TreatStream T {SaySurface ID State}}
         %[] sayCharge(ID KindItem)|T then
