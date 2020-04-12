@@ -1,3 +1,6 @@
+/**
+	Downloaded from Moodle on 12-04-2020
+*/
 functor
 import
 	QTk at 'x-oz://system/wp/QTk.ozf'
@@ -35,9 +38,7 @@ define
 	UpdateLife
 in
 
-/** BuildWindow 
-	Build and launch the initial window with no player on it (call only once) 
-*/
+%%%%% Build the initial window and set it up (call only once)
 	fun{BuildWindow}
 		Grid GridScore Toolbar Desc DescScore Window
 	in
@@ -71,17 +72,17 @@ in
 		handle(grid:Grid score:GridScore)
 	end
 
-%%%%% Squares of water and island %%%%%
+%%%%% Squares of water and island
 	Squares = square(0:label(text:"" width:1 height:1 bg:c(102 102 255))
 			 1:label(text:"" borderwidth:5 relief:raised width:1 height:1 bg:c(153 76 0))
 			)
 
-%%%%% Labels for rows and columns %%%%%
+%%%%% Labels for rows and columns
 	fun{Label V}
 		label(text:V borderwidth:5 relief:raised bg:c(255 51 51) ipadx:5 ipady:5)
 	end
 
-%%%%% Function to draw the map %%%%%
+%%%%% Function to draw the map
 	proc{DrawMap Grid}
 		proc{DrawColumn Column M N}
 			case Column
@@ -102,8 +103,8 @@ in
 	in
 		{DrawRow Map 1}
 	end
- 
-%%%%% Init the submarine %%%%%
+
+%%%%% Init the submarine
 	fun{DrawSubmarine Grid ID Position}
 		Handle HandlePath HandleScore X Y Id Color LabelSub LabelScore
 	in
@@ -224,8 +225,8 @@ in
 		case State
 		of nil then nil
 		[] guiPlayer(id:ID score:HandleScore submarine:Handle mines:M path:P)|Next then
-			{HandleScore set(0)}
 			if (ID == WantedID) then
+				{HandleScore set(0)}
 				for H in P do
 			 		{RemoveItem Grid H}
 				end
@@ -242,10 +243,6 @@ in
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	/** StartWindow
-		Create a port for the GUI
-		Launch a thread to treat the stream of the port just created
-	 */
 	fun{StartWindow}
 		Stream
 		Port
@@ -277,14 +274,14 @@ in
 			{TreatStream T Grid {StateModification Grid ID State {RemoveMine Position}}}
 		[] surface(ID)|T then
 			{TreatStream T Grid {StateModification Grid ID State RemovePath}}
+		[] removePlayer(ID)|T then
+			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] explosion(ID Position)|T then
 			{TreatStream T Grid State}
 		[] drone(ID Drone)|T then
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then
 			{TreatStream T Grid State}
-		[] removePlayer(ID)|T then
-			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] _|T then
 			{TreatStream T Grid State}
 		end
