@@ -13,41 +13,66 @@ import
     System
 define
     GUIPORT
-    Port1
-    Port2
-    ID1
-    ID2
-    Position1
-    Position2
+    PLAYER_PORTS
+    
+    /** CreatePlayer
+        bind PLAYER_PORTS to a list of Ports representing each player and place them on the Map
+    */
 
-    proc{CreatePlayer}
-        Port1 = {PlayerManager.playerGenerator player018basic1 Input.colors.1 1}
-        Port2 = {PlayerManager.playerGenerator player018basic1 Input.colors.2.1 2} %j'ai changé parce que je vois pas pourquoi créer 2 fois le meme fichier si c'est les meme :/
+    /** CreatePlayer
+    */
+    fun {CreatePlayer}
+        /** CreateEachPlayer
+        @pre 
+            NbPlayer = number of players during the game
+            Kinds = list types of users (AI or Human)
+            Colors = list of colors for each player
+            ID = unique ID assigned to a specific player
+        @post
+            create a port for each player
+            assign a unique ID, a color
+            initialise players on the map
+            return a list of port representing the players just created
+        */
+        fun{CreateEachPlayer NbPlayer Kinds Colors ID}
+            case Kinds
+            of K1|KT then
+                case Colors
+                of C1|CT then
+                    P Id Position in
+                        P = {PlayerManager.playerGenerator K1 C1 ID} 
+                        {Send P initPosition(Id Position)}
+                        {Wait Id} {Wait Position}
+                        {Send GUIPORT initPlayer(Id Position)}
 
-        {Send Port1 initPosition(ID1 Position1)}
-        {Send Port2 initPosition(ID2 Position2)}
-
-        {Wait ID1}
-        {Wait ID2}
-        {Wait Position1}
-        {Wait Position2}
-
-        {Send GUIPORT initPlayer(ID1 Position1)}
-        {Send GUIPORT initPlayer(ID2 Position2)}
-
+                        P | {CreateEachPlayer NbPlayer-1 KT CT ID+1}
+                else
+                    nil
+                end
+            else
+                nil
+            end
+        end
+    in
+        {CreateEachPlayer Input.nbPlayer Input.players Input.colors 1}
     end
 in
-    {System.show 'Debut de la main'}
+    {System.show 'Start'}
+
     %%%% 1 - Create the port for the GUI and launch its interface %%%%
     GUIPORT = {GUI.portWindow} %Create the port for the GUI
     {Send GUIPORT buildWindow} %Launch its interface
 
-    %%%% 2 - Create the port for every player using the PlayerManager and assigne a unique id %%%%
-    {CreatePlayer}
+    %%%% 2 - Initialize players %%%%
+    PLAYER_PORTS = {CreatePlayer}
+
+
+
 
 
     %%%% 3 - Ask every player to set up (choose initial point at the surface) %%%%
 
     %%%% 4 - Launch the game in the correct mode %%%%
-    {System.show 'Fin de la main'}
+
+    {System.show 'Stop'}
 end

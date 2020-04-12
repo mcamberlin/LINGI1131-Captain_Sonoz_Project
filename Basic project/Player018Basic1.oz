@@ -92,11 +92,15 @@ in
                 NewState = {AdjoinList State [position#NewPosition]}
             end
         [] east then 
-            NewPosition = pt(x:(Position.x)-1 y:Position.y)
+            NewPosition = pt(x:Position.x y:(Position.y+1))
+            {System.show 'The New Position is :'}
+            {System.show NewPosition}
             if {IsIsland NewPosition.x NewPosition.y Input.map} then
                 {System.show 'The direction selected correspond to an island'}
             else
-                Position = pt(x:Position.x y:(Position.y)+1) 
+                NewPosition = pt(x:Position.x y:(Position.y)+1) 
+                {System.show 'Binding Position'}
+                Position = NewPosition
                 NewState = {AdjoinList State [position#NewPosition]}
             end
         [] south then 
@@ -375,6 +379,13 @@ in
         end
     end
 
+    /** StartPlayer
+        @pre
+            Color
+            ID
+        @post 
+            Create a port representing the player
+    */
     fun{StartPlayer Color ID}
         Stream
         Port
@@ -391,17 +402,6 @@ in
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
                             )
-        /** State
-            state( id(id<idNum> color:<color> name:Name) 
-                position:<position> 
-                lastPosition:<position>
-                direction:<direction> 
-                surface: <true>|<false>
-                dive: <true>|<false>
-                damage:d
-                loads: loads(mine:x missile:y drone:z sonar: u) 
-                weapons: weapons(mine:x missile:y drone:z sonar:u))
-        */
         thread
             {TreatStream Stream InitialState}
         end

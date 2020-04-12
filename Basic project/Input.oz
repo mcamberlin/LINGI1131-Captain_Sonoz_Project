@@ -84,9 +84,9 @@ in
 
    %%%% Players description %%%%
 
-      NbPlayer = 2
-      Players = [player018basic1 player018basic1]
-      Colors = [yellow green]
+      NbPlayer = 3
+      Players = [player018basic1 player018basic1 player018basic1]
+      Colors = [yellow green orange]
       MaxDamage = 4
 
    %%%% Surface time/turns %%%%
