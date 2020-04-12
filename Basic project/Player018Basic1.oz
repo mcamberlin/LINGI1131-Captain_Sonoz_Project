@@ -43,6 +43,8 @@ define
     KindItem
 
     ManhattanDistance
+    PositionMine 
+    PositionMissile
     RandomPosition
     IsIsland
     IsOnMap
@@ -293,25 +295,25 @@ in
         permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
         state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
         Comprend pas comment envoyer un item....
-     
+    */
     fun{FireItem ID KindFire State}
-        
+        /* 
         1. check wich item is available
         2. fire the item by decreasing the specific weapon 
         3. Bind ID and KindFire to the weapon   Comment demander position????
-        
-        NewState NewWeapon in
+        */
+        NewState NewWeapon TargetPosition in
         if State.weapons.mine > 0 then
             NewWeapon = {AdjoinList State.weapons [mine#State.weapons.mine-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
-            FireItem = mine({RandomPosition})        %Demander position ???????????????
+            FireItem = mine({PositionMine NewState.position})        %Demander position ???????????????
             NewState
         elseif State.weapons.missile > 0 then
             NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
-            FireItem = missile({RandomPosition})        %Demander position ???????????????
+            FireItem = missile({PositionMissile NewState.position})        %Demander position ???????????????
             NewState
 
         elseif State.weapons.drone > 0 then
@@ -334,7 +336,7 @@ in
         end
         
     end
-    */
+
     
     
 
@@ -488,7 +490,33 @@ in
     end
 
 
+    /**PositionMine 
+        give a random position that is bounded by minDistanceMine and maxDistanceMine around Position*/
+    fun{PositionMine Position}
+        Pos XMine YMine in 
+        XMine = Position.x + Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        YMine = Position.y + Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        Pos = pt(x:XMine y:YMine)
+        if {IsOnMap Pos.x Pos.y} then {PositionMine Position}
+        else 
+            Position 
+        end
 
+    end
+
+    /**PositionMissile
+        give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position*/
+    fun{PositionMissile Position}
+        Pos XMissile YMissile in 
+        XMissile = Position.x + Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        YMissile = Position.y + Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        Pos = pt(x:XMissile y:YMissile)
+        if {IsOnMap Pos.x Pos.y} then {PositionMissile Position}
+        else 
+            Position 
+        end
+
+    end
 
     /**ManhattanDistance
      */
