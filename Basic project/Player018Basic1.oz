@@ -33,7 +33,7 @@ define
     SayMissileExplode
     SayMineExplode
     SayPassingDrone
-    SayAnwserDrone
+    SayAnswerDrone
     SayPassingSonar
     SayAnswerSonar 
     SayDeath
@@ -41,6 +41,8 @@ define
 
     Item
     KindItem
+
+    ManhattanDistance
 
     RandomPosition
     IsIsland
@@ -283,7 +285,7 @@ in
     the player is dead if his damage is greater than Input.maxDamage
     */
     fun{IsDead Answer State}
-        Answer = State.damage >= maxDamage
+        Answer = State.damage >= Input.maxDamage
         State
     end 
 
@@ -293,6 +295,16 @@ in
 
     /** SaySurface 
     */
+    fun{SaySurface ID State}
+        if(State.surface) then 
+            {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' has made surface.'}}
+        else 
+            {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' is underwater.'}}
+        end
+
+        ID = State.id
+        State
+    end
 
 
     /** SayCharge 
@@ -300,34 +312,130 @@ in
 
     /** SayMinedPlaced 
     */
+    fun{SayMinePlaced ID State}
+        {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' placed a mine.'}}
+        ID = State.id
+        State
+    end
+
 
     /** SayMissileExplode 
+        ID indicates the id of the player that made a missile explode 
+        Position is the position of the explosion
+        Message (unbound) contains the informations about the damages of the player indentified by State :
+            - Manhattan distance >= 2 : no damage -> Message = null
+            -                    == 1 : 1 damage
+            -                    == 0 : 2 damages
+            If death : Messge = sayDeath(ID)
+            If no death : Message = sayDamageTaken(ID Damage LifeLeft)
+
+        Note : c'est idem que sayMineExplode mais verifie quand meme ce que j'ai fait ;)
     */
 
 
     /** SayMineExplode 
+        ID indicates the id of the player that made a mine explode 
+        Position is the position of the explosion
+        Message (unbound) contains the informations about the damages of the player indentified by State :
+            - Manhattan distance >= 2 : no damage -> Message = null
+            -                    == 1 : 1 damage
+            -                    == 0 : 2 damages
+            If death : Messge = sayDeath(ID)
+            If no death : Message = sayDamageTaken(ID Damage LifeLeft)
     */
+    fun{SayMineExplode ID Position Message State}
+        Distance NewState in
+        Distance = {ManhattanDistance Position State.position}
+        case Distance 
+        of 0 then 
+            NewState = {AdjoinList State [damage#State.damage+2]}
+            if NewState.damage >= Input.maxDamage then
+            %if death
+                Message = sayDeath(NewState.id)
+                NewState
+            else
+                Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
+            end
+        [] 1 then 
+            NewState = {AdjoinList State [damage#State.damage+1]}
+            if NewState.damage >= Input.maxDamage then
+            %if death
+                Message = sayDeath(NewState.id)
+                NewState
+            else
+                Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
+            end
+        else
+            Message = null
+            State
+        end
+    end
+
 
     /** SayPassingDrone 
     */
+    
 
     /** SayAnswerDrone 
     */
+    fun{SayAnswerDrone Drone ID Answer State}
+        case Drone
+        of drone(row X) then
+            if Answer then {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in row '} X}}
+            else
+                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' did not detect an ennemy in row '} X}}
+            end
+        [] drone(column Y) then 
+            if Answer then {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in column '} Y}}
+            else
+                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' did not detect an ennemy in column '} Y}}
+            end
+        else
+            {System.show 'Bad initialisation of Drone.'}
+        end
+        State
+    end
 
-    /** SayPassingDrone 
-    */
 
     /** SayPassingSonar 
     */
+    
 
     /** SayAnswerSonar 
     */
+    fun{SayAnswerSonar ID Answer State}
+        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detect an ennemy around the position '} Answer}}
+        State
+    end
 
     /** SayDeath 
     */
 
     /** SayDamageTaken 
     */
+    fun {SayDamageTaken ID Damage LifeLeft State}
+        {System.show {OS.Append {OS.Append 
+                            {OS.Append 
+                                    {OS.Append 'The player ' State.id.id} 
+                                    ' received '} 
+                            Damage}}}
+        {System.show {OS.Append {OS.Append 
+                            {OS.Append 
+                                    {OS.Append 'The player ' State.id.id} 
+                                    ' has a total health point of '} 
+                            LifeLeft}}}
+        State        
+
+    end
+
+
+
+
+    /**ManhattanDistance
+     */
+    fun{ManhattanDistance Position1 Position2}
+        {Abs Position1.x-Position2.x} + {Abs Position1.y-Position2.y}
+    end
 
 
    /** IsIsland
@@ -425,8 +533,27 @@ in
             {TreatStream T {ChargeItem ID KindItem State}}
         [] fireItem(ID FireItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
+        %[] firemine(ID Mine)|T then
         [] isDead(Answer)|T then 
             {TreatStream T {IsDead Answer State}}
+        %[] sayMove(ID Direction)|T then
+        [] saySurface(ID)|T then
+            {TreatStream T {SaySurface ID State}}
+        %[] sayCharge(ID KindItem)|T then
+        [] sayMinePlaced(ID)|T then
+            {TreatStream T {SayMinePlaced ID State}}
+        %[] sayMissileExplode(ID Position Message)|T then
+        [] sayMineExplode(ID Position Message)|T then 
+            {TreatStream T {SayMineExplode ID Position Message State}}
+        %[] sayPassingDrone(Drone ID Answer)|T then
+        [] sayAnswerDrone(Drone ID Answer)|T then 
+            {TreatStream T {SayAnswerDrone Drone ID Answer State}}
+        %[] sayPassingSonar(ID Sonar)|T then
+        [] sayAnswerSonar(ID Answer)|T then 
+            {TreatStream T {SayAnswerSonar ID Answer State}}
+        %[] sayDeath(ID)|T then
+        [] sayDamagetaken(ID Damage Lifeleft)|T then
+            {TreatStream T {SayDamageTaken ID Damage Lifeleft State}}
         else
             skip
         end
