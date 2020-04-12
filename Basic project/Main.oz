@@ -46,8 +46,10 @@ define
             nil
         end
     end
+/*
+    proc{TurnByTurn NbPlayerRemaining}
 
-    proc{TurnByTurn}
+
     end
 
     proc{Simultaneous}
@@ -60,6 +62,7 @@ define
             {Simultaneous}
         end
     end
+*/
 
 in
     {System.show 'Start'}
@@ -73,7 +76,7 @@ in
 
     %%%% 4 - Launch the game in the correct mode %%%%
 
-    {LaunchGame}
+    /*{LaunchGame}*/
 
     {System.show 'Stop'}
 end

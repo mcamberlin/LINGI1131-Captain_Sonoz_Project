@@ -1,7 +1,7 @@
 /** State
 state( id(id<idNum> color:<color> name:Name) 
                 position:<position> 
-                lastPosition:<position>
+                lastPositions:nil | <position>
                 direction:<direction> 
                 surface: <true>|<false>
                 dive: <true>|<false>
@@ -43,16 +43,18 @@ define
     KindItem
 
     ManhattanDistance
-
     RandomPosition
     IsIsland
+    IsOnMap
+    IsPositionOnMap
+
     StartPlayer
     TreatStream
 in
     /** InitPosition
         ID = unbound; Position= unbound
         State = current state of the submarine
-        bind ID and position by the current position selected
+        bind ID and position to a random position on the map
     */
     fun{InitPosition ID Position State}
         local
@@ -78,59 +80,110 @@ in
     /** Move
         ID = unbound; Position = unbound; Direction = unbound
         State = current state of the submarine
-        bind ID, Position and Direction by the new position and direction selected
+        Select a random position and bind ID, Position to new Position and Direction to new Direction
     */ 
     fun{Move ID Position Direction State}
-        NewState NewPosition in
-        case Direction 
-        of surface then 
-            NewState = {AdjoinList State [surface#true]}  %What the fuck is surface ???
-        [] north then 
-            NewPosition = pt(x:(Position.x)-1 y:Position.y)
-            if {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
-            else
-                Position = pt(x:(Position.x)-1 y:Position.y) 
-                NewState = {AdjoinList State [position#NewPosition]}
+        /** RandomDirection
+        @pre
+        @post 
+            return a random direction (east, west, north, south, surface)
+        */
+        fun{RandomDirection}
+            NewDirection = {OS.rand} mod 5
+        in
+            if(NewDirection == 0) then surface
+            elseif(NewDirection == 1) then east
+            elseif(NewDirection == 2) then north
+            elseif(NewDirection == 3) then west
+            else 
+                south
             end
+        end
+
+        /** NotAlreadyVisited
+        @pre
+            Position
+            State
+        @post
+            true if the Position has already been visited
+            false otherwise
+        */
+        fun{IsAlreadyVisited Position State}
+            fun{Contains ListPositions Position}
+                case ListPositions
+                of nil then false
+                [] H|T then
+                    if(H == Position) then true
+                    else
+                        {Contains T Position}
+                    end
+                else
+                    false
+                end
+            end
+        in
+            {Contains State.lastPositions Position}
+        end
+
+        /** Last
+        @pre 
+            L = list
+        @post
+            return the last element of the list L
+        */
+        fun{Last L}
+            fun{RLast L Acc}
+                case L 
+                of nil then Acc
+                []H|T then {RLast T H}
+                end
+            end
+        in
+            {RLast L nil}
+        end
+
+        NewDirection
+        NewPosition
+        NewState
+    in
+        NewDirection = {RandomDirection}
+        case NewDirection 
+        of surface then 
+            NewPosition = {Last State.lastPositions}
+        [] north then 
+            NewPosition = pt(x:(Position.x-1) y:Position.y)
+        [] south then 
+            NewPosition = pt(x:(Position.x+1) y:Position.y)
         [] east then 
             NewPosition = pt(x:Position.x y:(Position.y+1))
-            {System.show 'The New Position is :'}
-            {System.show NewPosition}
-            if {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
-            else
-                NewPosition = pt(x:Position.x y:(Position.y)+1) 
-                {System.show 'Binding Position'}
-                Position = NewPosition
-                NewState = {AdjoinList State [position#NewPosition]}
-            end
-        [] south then 
-            NewPosition = pt(x:(Position.x)-1 y:Position.y)
-            if {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
-            else
-                Position = pt(x:(Position.x)+1 y:Position.y) 
-                NewState = {AdjoinList State [position#NewPosition]}
-            end
-        [] west then 
-            NewPosition = pt(x:(Position.x)-1 y:Position.y)
-            if {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
-            else
-                Position = pt(x:Position.x y:(Position.y)-1) 
-                NewState = {AdjoinList State [position#NewPosition]}
-            end
-        else
-            {System.show 'Direction unknown'}
-            NewState = State
-            Direction = nil
+        else /* west*/
+            NewPosition = pt(x:Position.x y:(Position.y-1))
         end 
-        %Binding variables
-        ID = NewState.id
-        Direction = NewState.direction
-        %returning current state
-        NewState
+
+        if( {Not {IsPositionOnMap NewPosition} } ) then 
+            {System.show 'The direction selected is outside the map'}
+            {Move ID Position Direction State}
+        
+        elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
+            {System.show 'The direction selected correspond to an island'}
+            {Move ID Position Direction State}
+
+        elseif {IsAlreadyVisited NewPosition State} then
+            {System.show 'The direction selected correspond to a spot already visited'}
+            {Move ID Position Direction State}
+
+        else
+            ID = State.id
+            Position = NewPosition
+            Direction = NewDirection
+            if(NewDirection == surface) then
+                NewState = {AdjoinList State [surface#true lastPositions# [nil] ]} % reset the last positions visited since last surface phase
+            else
+                NewState = {AdjoinList State [position#NewPosition lastPositions#({OS.Append lastPositions NewPosition})]}  /*Add the NewPosition To The position visited*/
+            end
+            
+            NewState %return
+        end
     end 
 
     
@@ -240,13 +293,13 @@ in
         permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
         state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
         Comprend pas comment envoyer un item....
-     */
+     
     fun{FireItem ID KindFire State}
-        /*
+        
         1. check wich item is available
         2. fire the item by decreasing the specific weapon 
         3. Bind ID and KindFire to the weapon   Comment demander position????
-        */
+        
         NewState NewWeapon in
         if State.weapons.mine > 0 then
             NewWeapon = {AdjoinList State.weapons [mine#State.weapons.mine-1]}
@@ -279,7 +332,10 @@ in
             KindFire = null
             State
         end
+        
     end
+    */
+    
     
 
     /** FireMine(ID Mine) 
@@ -429,7 +485,6 @@ in
                                     ' has a total health point of '} 
                             LifeLeft}}}
         State        
-
     end
 
 
@@ -472,6 +527,37 @@ in
             false
         end
     end
+
+    /** IsOnMap
+    @pre
+        (X, Y) coordonnates
+    @post
+        true if the Coordonates are on the map
+        false otherwise    
+    */
+    fun{IsOnMap X Y}
+        if(X<Input.nRow andthen X>0) then
+            if(Y<Input.nColumn andthen Y>0) then
+                true
+            else
+                false
+            end
+        else
+            false
+        end
+    end
+
+    /** IsPositionOnMap
+    @pre
+        Position
+    @post
+        true if the Position is on the map
+        false otherwise    
+    */
+    fun{IsPositionOnMap Position}
+        {IsOnMap Position.x Position.y}
+    end
+
 
     /** RandomPosition
         select a random position in water in the map
