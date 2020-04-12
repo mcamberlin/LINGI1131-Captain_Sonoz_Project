@@ -366,10 +366,11 @@ in
         ID = unbound
         Mine = unbound
     @post
+        if a mine is ready to be fired, we randomly decided to placed a new mine or to explose an existing one.
+        otherwise the mine at the first position in mines() is explosed.
     */
     fun{FireMine ID Mine State}
         Fire NewWeapons in
-        
         /*They are mines ready to be fired */
         if(State.weapons.mine >0) then 
             Fire = {OS.rand} mod 2
@@ -377,11 +378,18 @@ in
             case Fire
             of 0 then  /*A mine is placed */ 
                 NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
-                NewMines = {AdjoinList State [mines# ({OS.Append })]}
-
-            else 
+                NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
+                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
+                ID = state.id
+                Mine = nil
+                
+                NewState
+            else /*Fired an existing mine */
                 if(State.mines == nil) then /*None mine has been placed before */
-                    skip
+                    NewState = State
+                    ID = State.id
+                    Mine = nil
+                    NewState
                 else /* The mine at the first position in mines() exposes  */
                     NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
                     NewState = {AdjoinList State [mines#NewMines]}
@@ -390,13 +398,15 @@ in
                     NewState
                 end
             end
-        else 
+        else /* The load of mine is empty => Expose an existing one */
             if(State.mines == nil) then /*None mine has been placed before */
-                    skip
+                NewState = State
+                ID = State.id
+                Mine = nil
+                NewState
             else /* The mine at the first position in mines() exposes  */
-                NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
                 NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
-                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
+                NewState = {AdjoinList State [mines#NewMines]}
                 ID = State.id
                 Mine = mine(State.mines.1)
                 NewState
@@ -413,7 +423,16 @@ in
     end 
 
     /** SayMove 
+    @pre
+        ID = ID of the submarine
+        Direction = NewDirection of the submarine
+    @post
+        Announce to the others that the player with id ID has changed direction to Direction
     */
+    fun{SayMove ID Direction State}
+        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' has moved in the direction'}} Direction}
+        State
+    end
 
 
     /** SaySurface 
@@ -431,7 +450,16 @@ in
 
 
     /** SayCharge 
+    @pre
+        ID = ID of the submarine
+        Direction = NewDirection of the submarine
+    @post
+        Announce to the others that the player with id ID has charged the item KindItem
     */
+    fun{SayCharge ID KindItem State}
+        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' has charged a'}} KindItem}
+        State
+    end
 
     /** SayMinedPlaced 
     */
@@ -449,12 +477,41 @@ in
             - Manhattan distance >= 2 : no damage -> Message = null
             -                    == 1 : 1 damage
             -                    == 0 : 2 damages
-            If death : Messge = sayDeath(ID)
+            If death : Message = sayDeath(ID) !!!!!!!!!! monter a la surface
             If no death : Message = sayDamageTaken(ID Damage LifeLeft)
 
         Note : c'est idem que sayMineExplode mais verifie quand meme ce que j'ai fait ;)
     */
+    /*fun{SayMissileExplode ID Position Message State}
+        Distance NewState 
+    in
+        Distance = {ManhattanDistance Position State.position}
+        case Distance 
+        of 0 then 
+            NewState = {AdjoinList State [damage#State.damage+2]}
+            if NewState.damage >= Input.maxDamage then
+            %if death
+                Message = sayDeath(NewState.id)
+                NewState
+            else
+                Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
+            end
+        [] 1 then 
+            NewState = {AdjoinList State [damage#State.damage+1]}
+            if NewState.damage >= Input.maxDamage then
+            %if death
+                Message = sayDeath(NewState.id)
+                NewState
+            else
+                Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
+            end
+        else
+            Message = null
+            State
+        end
 
+    end
+    */
 
     /** SayMineExplode 
         ID indicates the id of the player that made a mine explode 
@@ -463,7 +520,7 @@ in
             - Manhattan distance >= 2 : no damage -> Message = null
             -                    == 1 : 1 damage
             -                    == 0 : 2 damages
-            If death : Messge = sayDeath(ID)
+            If death : Message = sayDeath(ID)
             If no death : Message = sayDamageTaken(ID Damage LifeLeft)
     */
     fun{SayMineExplode ID Position Message State}
