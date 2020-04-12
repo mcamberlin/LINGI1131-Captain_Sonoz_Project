@@ -208,11 +208,28 @@ in
         return the new state of the submarine
     */
     fun{ChargeItem ID KindItem State}
+        /** RandomItem
+        @pre
+        @post 
+            return a random item (mine,missile, sonar, drone)
+        */
+        fun{RandomItem}
+            NewItem = {OS.rand} mod 4
+        in
+            if(NewItem == 0) then mine
+            elseif(NewItem == 1) then missile
+            elseif(NewItem == 2) then sonar
+            else 
+                drone
+            end
+        end
+
         NewState NewLoad NewWeapons NewLoads in
-        case KindItem
+        NewItem = {RandomItem}
+        case NewItem
         of missile then
             %Increase the loads of missile
-             NewLoad = {AdjoinList State.loads [missile#(State.loads.missile+1)]}
+            NewLoad = {AdjoinList State.loads [missile#(State.loads.missile+1)]}
 
             if(NewLoad.missile >= Input.missile) then 
                 % new missile created: number of loading charges required to create a missile reached
@@ -225,6 +242,7 @@ in
                 KindItem = missile
                 {System.show {OS.Append 'The number of missile has increased for player ' NewState.id.id}}
             else
+                KindItem = nil
                 NewState = {AdjoinList State [loads#NewLoad]}
             end  
 
@@ -243,6 +261,7 @@ in
                 KindItem = mine
                 {System.show {OS.Append 'The number of mine has increased for player ' State.id.id}}
             else
+                KindItem = nil
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end       
         [] sonar then 
@@ -260,6 +279,7 @@ in
                 KindItem = sonar
                 {System.show {OS.Append 'The number of sonar has increased for player ' State.id.id}}
             else
+                KindItem = nil
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end       
         [] drone then
@@ -277,6 +297,7 @@ in
                 KindItem = drone
                 {System.show {OS.Append 'The number of drone has increased for player ' State.id.id}}
             else
+                KindItem = nil
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end   
         else
@@ -339,7 +360,47 @@ in
     
 
     /** FireMine(ID Mine) 
+    @pre
+        ID = unbound
+        Mine = unbound
+    @post
     */
+    fun{FireMine ID Mine State}
+        Fire NewWeapons in
+        
+        /*They are mines ready to be fired */
+        if(State.weapons.mine >0) then 
+            Fire = {OS.rand} mod 2
+            /** Choose between place a new mine or fired an existing one */
+            case Fire
+            of 0 then  /*A mine is placed */ 
+                NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
+                NewMines = {AdjoinList State [mines# ({OS.Append })]}
+
+            else 
+                if(State.mines == nil) then /*None mine has been placed before */
+                    skip
+                else /* The mine at the first position in mines() exposes  */
+                    NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
+                    NewState = {AdjoinList State [mines#NewMines]}
+                    ID = State.id
+                    Mine = mine(State.mines.1)
+                    NewState
+                end
+            end
+        else 
+            if(State.mines == nil) then /*None mine has been placed before */
+                    skip
+            else /* The mine at the first position in mines() exposes  */
+                NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
+                NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
+                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
+                ID = State.id
+                Mine = mine(State.mines.1)
+                NewState
+            end
+        end     
+    end
 
     /** IsDead
     the player is dead if his damage is greater than Input.maxDamage
