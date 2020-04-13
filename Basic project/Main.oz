@@ -46,7 +46,7 @@ define
             nil
         end
     end
-
+/* 
     proc{TurnByTurn NbPlayerRemaining}
         case PLAYER_PORTS 
         of H|T then %H is the number of the port for the player
@@ -81,7 +81,7 @@ define
             {Simultaneous}
         end
     end
-
+*/
 
 in
     {System.show 'Start'}
@@ -95,7 +95,7 @@ in
 
     %%%% 4 - Launch the game in the correct mode %%%%
 
-    {LaunchGame}
+    %{LaunchGame}
 
     {System.show 'Stop'}
 end

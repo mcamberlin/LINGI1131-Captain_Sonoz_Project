@@ -225,8 +225,8 @@ in
                 drone
             end
         end
-
-        NewState NewLoad NewWeapons NewLoads in
+        NewState NewLoad NewWeapons NewLoads NewItem
+    in
         NewItem = {RandomItem}
         case NewItem
         of missile then
@@ -370,7 +370,7 @@ in
         otherwise the mine at the first position in mines() is explosed.
     */
     fun{FireMine ID Mine State}
-        Fire NewWeapons in
+        Fire NewWeapons NewMines NewState in
         /*They are mines ready to be fired */
         if(State.weapons.mine >0) then 
             Fire = {OS.rand} mod 2
@@ -430,11 +430,7 @@ in
         Announce to the others that the player with id ID has changed direction to Direction
     */
     fun{SayMove ID Direction State}
-<<<<<<< HEAD
-        {System.show {OS.Append {OS.Append {OS.Append 'The player ' ID} 'moved to the '} Direction}}
-=======
         {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' has moved in the direction'}} Direction}
->>>>>>> d4605446d9c6337544cfefd12862055b42186add
         State
     end
 
@@ -580,30 +576,37 @@ in
         Answer is bound to true if the drone is on the row/column given in the drone
         false otherwise
     */
-    fun{SayPassingDrone Drone ID Answer}
-        case Drone
-        of drone(row X) then
-            if(State.position.x == X) then
-                Answer = true
-                ID = State.id
-                State
-            else
-                Answer = false
-                ID = State.id
-                State
-            end
-        [] drone(column Y) then
-            if(State.position.y == Y) then
-                Answer = true
-                ID = State.id
-                State
-            else
-                Answer = false
-                ID = State.id
-                State
-            end
-        else
+    fun{SayPassingDrone Drone ID Answer State}
+        if(State.damage == Input.maxDamage) then %the submarine is already dead
+            ID = nil
+            Answer = nil
             State
+        else
+
+            case Drone
+            of drone(row X) then
+                if(State.position.x == X) then
+                    Answer = true
+                    ID = State.id
+                    State
+                else
+                    Answer = false
+                    ID = State.id
+                    State
+                end
+            [] drone(column Y) then
+                if(State.position.y == Y) then
+                    Answer = true
+                    ID = State.id
+                    State
+                else
+                    Answer = false
+                    ID = State.id
+                    State
+                end
+            else
+                State
+            end
         end
     end
     
@@ -648,17 +651,18 @@ in
             ID = nil
             Answer = nil
             State
-        end
-        NewPosition = {RandomPosition}
-        Rand = {OS.rand} mod 2
-        if(Rand == 0) then
-            Answer = {AdjoinList Newposition [x#NewPosition.x y#State.position.y]}
-            ID = State.id
-            State
         else
-            Answer = {AdjoinList Newposition [x#State.position.x y#NewPosition.y]}
-            ID = State.id
-            State
+            NewPosition = {RandomPosition}
+            Rand = {OS.rand} mod 2
+            if(Rand == 0) then
+                Answer = {AdjoinList NewPosition [x#NewPosition.x y#State.position.y]}
+                ID = State.id
+                State
+            else
+                Answer = {AdjoinList NewPosition [x#State.position.x y#NewPosition.y]}
+                ID = State.id
+                State
+            end
         end
     end
     
@@ -854,7 +858,7 @@ in
             {TreatStream T {Dive State}}
         [] chargeItem(ID KindItem)|T then
             {TreatStream T {ChargeItem ID KindItem State}}
-        [] fireItem(ID FireItem)|T then 
+        [] fireItem(ID KindItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
         [] firemine(ID Mine)|T then
             {TreatStream T {FireMine ID Mine State}}
@@ -864,19 +868,24 @@ in
             {TreatStream T {SayMove ID Direction State}}
         [] saySurface(ID)|T then
             {TreatStream T {SaySurface ID State}}
-        %[] sayCharge(ID KindItem)|T then
+        [] sayCharge(ID KindItem)|T then
+            {TreatStream T {SayCharge ID KindItem State}}
         [] sayMinePlaced(ID)|T then
             {TreatStream T {SayMinePlaced ID State}}
-        %[] sayMissileExplode(ID Position Message)|T then
+        [] sayMissileExplode(ID Position Message)|T then
+            {TreatStream T {SayMissileExplode ID Position Message State}}
         [] sayMineExplode(ID Position Message)|T then 
             {TreatStream T {SayMineExplode ID Position Message State}}
-        %[] sayPassingDrone(Drone ID Answer)|T then
+        [] sayPassingDrone(Drone ID Answer)|T then
+            {TreatStream T {SayPassingDrone Drone ID Answer State}}
         [] sayAnswerDrone(Drone ID Answer)|T then 
             {TreatStream T {SayAnswerDrone Drone ID Answer State}}
-        %[] sayPassingSonar(ID Sonar)|T then
+        [] sayPassingSonar(ID Answer)|T then
+            {TreatStream T {SayPassingSonar ID Answer State}} 
         [] sayAnswerSonar(ID Answer)|T then 
             {TreatStream T {SayAnswerSonar ID Answer State}}
-        %[] sayDeath(ID)|T then
+        [] sayDeath(ID)|T then
+            {TreatStream T {SayDeath ID State}}
         [] sayDamagetaken(ID Damage Lifeleft)|T then
             {TreatStream T {SayDamageTaken ID Damage Lifeleft State}}
         else
