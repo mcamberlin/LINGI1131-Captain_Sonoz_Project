@@ -503,7 +503,7 @@ in
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
-                NewState = {AdjoinList State [damage#NewState]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
                 NewState
             end
@@ -514,7 +514,7 @@ in
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
-                NewState = {AdjoinList State [damage#NewState]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
                 NewState
             end
@@ -547,7 +547,7 @@ in
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
-                NewState = {AdjoinList State [damage#NewState]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
                 NewState
             end
@@ -558,7 +558,7 @@ in
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
-                NewState = {AdjoinList State [damage#NewState]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
                 NewState
             end

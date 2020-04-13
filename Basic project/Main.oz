@@ -56,6 +56,16 @@ define
         end
     end
 
+    proc{BroadCast PLAYER_PORTS M}
+        case PLAYER_PORTS
+        of H|T then
+            {Send H M}
+            {BroadCast T M}
+        else
+            skip
+        end
+    end
+
     
     /** CreateEachPlayer
     @pre 
@@ -133,7 +143,60 @@ define
         InitialState
     end
 
+    /** WhichFireItem
+    @pre
+    @post
+    */
+    proc{WhichFireItem KindFire ID GameState}
+        case KindFire
+        of nil then skip
+        [] missile(Position) then {Missile Position ID GameState}
+        /*[] mine(Position) then {Mine Position GameState}
+        [] sonar then {Sonar GameState}
+        [] drone(RowOrColumn Index) then {Drone RowOrColumn Index GameState}*/
+        else
+            skip
+        end
+    end
     
+    /** Missile
+    @pre 
+        Position
+        GameState
+    @post
+    */
+    proc{Missile Position ID GameState}
+        case GameState.playersState 
+        of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS)|T then
+            Message in
+            {Send P sayMissileExplode(ID Position Message)}
+            {Wait Message}
+
+            case Message
+            of sayDeath(ID) then 
+                NewGameState NewPlayersState NewPlayerState
+                in
+                {BroadCast PLAYER_PORTS sayDeath(ID)}
+                {Send GUIPORT removePlayer(ID)}
+                %mettre a false alive du joueur mort
+                NewPlayerState = {Get NewGameState.playersState ID}
+                NewPlayersState = {AdjoinList NewPlayerState [alive#false]}
+                NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]}                
+            
+            [] sayDamageTaken(ID Damage LifeLeft) then
+                NewGameState NewPlayersState NewPlayerState
+                in
+                {BroadCast PLAYER_PORTS sayDamageTaken(ID Damage LifeLeft)}
+                {Send GUIPORT lifeUpdate(ID LifeLeft)}
+            else
+                skip
+            end
+
+        else
+            skip
+        end
+    end
+
     /** InLoopTurnByTurn
     @pre
         Gamestate = current game state
@@ -169,19 +232,28 @@ define
                     NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#1]}
                     NewPlayersState = {Change GameState.playersState Index NewPlayerState }
                     NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
-                    {Send NewPlayerState.port saySurface(ID)}
+                    {BroadCast PLAYER_PORTS saySurface(ID)}
                     {Send GUIPORT surface(ID)}
                     {InLoopTurnByTurn NewGameState I+1}
                 else
                     %5. the player want to move to a direction
-                    {Send NewPlayerState.port saySurface(ID)}
+                    {BroadCast PLAYER_PORTS sayMove(ID Direction)}
                     {Send GUIPORT movePlayer(ID Position)}
+                    %6. the player charge an item
                     ID KindItem
                     in
                     {Send NewPlayerState.port chargeItem(ID KindItem)}
                     {Wait ID} {Wait KindItem}
-                    {Send NewPlayerState.port sayCharge(ID KindItem)}
+                    {BroadCast PLAYER_PORTS sayCharge(ID KindItem)}
+                    %7. the player fire the item
+                    local ID KindFire
+                    in
+                        {Send NewPlayerState.port fireItem(ID KindFire)}
+                        {Wait ID} {Wait KindFire}
 
+                        {WhichFireItem KindFire ID GameState}
+                    end
+                    
 
                 end                                   
             else
