@@ -205,7 +205,7 @@ in
             the player announce it 
         else
             the id is bound
-            the item has null value
+            the item has nil value
             increase the load by one one the item selected (mine, missile, drone or sonar)
         return the new state of the submarine
     */
@@ -352,7 +352,7 @@ in
             NewState
 
         else 
-            KindFire = null
+            KindFire = nil
             State
         end
         
@@ -477,47 +477,52 @@ in
 
 
     /** SayMissileExplode 
-        ID indicates the id of the player that made a missile explode 
-        Position is the position of the explosion
-        Message (unbound) contains the informations about the damages of the player indentified by State :
-            - Manhattan distance >= 2 : no damage -> Message = null
-            -                    == 1 : 1 damage
-            -                    == 0 : 2 damages
-            If death : Message = sayDeath(ID) !!!!!!!!!! monter a la surface
-            If no death : Message = sayDamageTaken(ID Damage LifeLeft)
+    @pre 
+        ID = the id of the player that made a missile explode 
+        Position = the position of the explosion
+        Message (unbound)
+    @post 
+        Bind message to informations about the damages of the player indentified by State :
+            if Manhattan distance >= 2 : no damage -> Message = nil
+            elseif                    == 1 : 1 damage
+            else                    == 0 : 2 damages
 
-        Note : c'est idem que sayMineExplode mais verifie quand meme ce que j'ai fait ;)
+            if death : Message = sayDeath(ID) and <surface> = true (on a choisi de faire monter en surface une fois que le submarine est mort)
+            else : Message = sayDamageTaken(ID Damage LifeLeft)
     */
-    /*fun{SayMissileExplode ID Position Message State}
-        Distance NewState 
+    fun{SayMissileExplode ID Position Message State}
+        Distance NewState NewDamage
     in
         Distance = {ManhattanDistance Position State.position}
         case Distance 
         of 0 then 
-            NewState = {AdjoinList State [damage#State.damage+2]}
-            if NewState.damage >= Input.maxDamage then
-            %if death
+            NewDamage = State.damage +2 
+            if NewDamage >= Input.maxDamage then /*Dead */
                 Message = sayDeath(NewState.id)
+                NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
+                NewState = {AdjoinList State [damage#NewState]}
                 Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
+                NewState
             end
         [] 1 then 
-            NewState = {AdjoinList State [damage#State.damage+1]}
-            if NewState.damage >= Input.maxDamage then
-            %if death
+            NewDamage = State.damage +1 
+            if NewState.damage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(NewState.id)
+                NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
+                NewState = {AdjoinList State [damage#NewState]}
                 Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
+                NewState
             end
         else
-            Message = null
+            Message = nil
             State
         end
-
     end
-    */
+    
 
     /** SayMineExplode 
         ID indicates the id of the player that made a mine explode 
@@ -530,36 +535,77 @@ in
             If no death : Message = sayDamageTaken(ID Damage LifeLeft)
     */
     fun{SayMineExplode ID Position Message State}
-        Distance NewState in
+        Distance NewState NewDamage
+    in
         Distance = {ManhattanDistance Position State.position}
         case Distance 
         of 0 then 
-            NewState = {AdjoinList State [damage#State.damage+2]}
-            if NewState.damage >= Input.maxDamage then
-            %if death
+            NewDamage = State.damage +2 
+            if NewDamage >= Input.maxDamage then /*Dead */
                 Message = sayDeath(NewState.id)
+                NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
+                NewState = {AdjoinList State [damage#NewState]}
                 Message = sayDamageTaken(NewState.id 2 Input.maxDamage-NewState.damage)
+                NewState
             end
         [] 1 then 
-            NewState = {AdjoinList State [damage#State.damage+1]}
-            if NewState.damage >= Input.maxDamage then
-            %if death
+            NewDamage = State.damage +1 
+            if NewState.damage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(NewState.id)
+                NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
+                NewState = {AdjoinList State [damage#NewState]}
                 Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
+                NewState
             end
         else
-            Message = null
+            Message = nil
             State
         end
     end
 
 
     /** SayPassingDrone 
+    @pre
+        Drone 
+        ID
+        Answer
+        State
+    @post
+        Answer the question contained in the drone in arg
+        ID is bound 
+        Answer is bound to true if the drone is on the row/column given in the drone
+        false otherwise
     */
+    fun{SayPassingDrone Drone ID Answer}
+        case Drone
+        of drone(row X) then
+            if(State.position.x == X) then
+                Answer = true
+                ID = State.id
+                State
+            else
+                Answer = false
+                ID = State.id
+                State
+            end
+        [] drone(column Y) then
+            if(State.position.y == Y) then
+                Answer = true
+                ID = State.id
+                State
+            else
+                Answer = false
+                ID = State.id
+                State
+            end
+        else
+            State
+        end
+    end
     
 
     /** SayAnswerDrone 
@@ -567,7 +613,8 @@ in
     fun{SayAnswerDrone Drone ID Answer State}
         case Drone
         of drone(row X) then
-            if Answer then {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in row '} X}}
+            if Answer then 
+                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in row '} X}}
             else
                 {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' did not detect an ennemy in row '} X}}
             end
@@ -584,7 +631,36 @@ in
 
 
     /** SayPassingSonar 
+    @pre 
+        ID
+        Answer
+        State
+    @post
+        Answer a position with one coordinate right and the other wrong
+        ID is bound 
+        Answer is bound to true if the drone is on the row/column given in the drone
+        false otherwise
     */
+    fun{SayPassingSonar ID Answer State}
+        NewPosition Rand
+    in
+        if(State.damage == Input.maxDamage) then %the submarine is already dead
+            ID = nil
+            Answer = nil
+            State
+        end
+        NewPosition = {RandomPosition}
+        Rand = {OS.rand} mod 2
+        if(Rand == 0) then
+            Answer = {AdjoinList Newposition [x#NewPosition.x y#State.position.y]}
+            ID = State.id
+            State
+        else
+            Answer = {AdjoinList Newposition [x#State.position.x y#NewPosition.y]}
+            ID = State.id
+            State
+        end
+    end
     
 
     /** SayAnswerSonar 
@@ -595,7 +671,16 @@ in
     end
 
     /** SayDeath 
+    @pre
+        ID = ID of the new dead submarine
+        State
+    @post
+        Display an informative message of the death of the player id
     */
+    fun{SayDeath ID State}
+        {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' is dead '}}
+        State
+    end
 
     /** SayDamageTaken 
     */
