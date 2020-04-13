@@ -15,6 +15,25 @@ define
     GUIPORT
     PLAYER_PORTS
 
+    /**
+    @pre
+        L = list of elements
+        I = index of the element considering in the list
+    @post
+        return the Index th element in the list
+     */
+    fun{Get L I}
+        case L
+        of nil then nil
+        [] H|T then 
+                if(I ==1) then H 
+                else
+                    {Get T I-1}
+                end
+        else
+            nil
+        end
+    end
     
     /** CreateEachPlayer
     @pre 
@@ -91,8 +110,33 @@ define
         InitialState
     end
 
-    proc{InLoopTurnByTurn GameState}
-        skip
+    /** InLoopTurnByTurn
+    @pre
+        Gamestate = current game state
+        I = I in the playersState of the player that will play
+    @post
+    */
+    proc{InLoopTurnByTurn GameState I}
+        
+        if(GameState.nbPlayersAlive >1) then
+            Index NewGameState CurrentPlayer in 
+                Index = I mod Input.GameState.nbPlayersAlive
+                CurrentPlayer = {Get GameState.playersState I}
+                
+                if(CurrentPlayer.isAtSurface == true) then
+                    {InLoopTurnByTurn GameState I+1}
+                else
+                    
+                end
+
+
+
+
+            
+            {InLoopTurnByTurn NewGameState I+1}
+        else
+            {System.show {OS.Append 'VAINQUEUR: ' GameState.playersState.1}}
+        end
     end
 
     /** #TreatGame
