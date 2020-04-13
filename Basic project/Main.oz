@@ -14,6 +14,7 @@ import
 define
     GUIPORT
     PLAYER_PORTS
+
     
     /** CreateEachPlayer
     @pre 
@@ -67,7 +68,7 @@ define
             Their place in the list correspond to their ID
         */
         fun{StartPlayers NbPlayer}
-            if(NbPlayers ==0) then
+            if(NbPlayer ==0) then
                 nil
             else
                 NewPlayerState 
@@ -77,18 +78,17 @@ define
                                                 isAtSurface:true 
                                                 turnRemaining:0
                                                 )
-                    NewPlayerState | {StartPlayer NbPlayer-1}
+                    NewPlayerState | {StartPlayers NbPlayer-1}
             end
         end
 
         InitialState
     in
         InitialState = gameState(
-                                nbPlayersAlive: Input.nbPlayers
+                                nbPlayersAlive: Input.nbPlayer
                                 playersState: {StartPlayers Input.nbPlayer}
                                 )
         InitialState
-        {InLoopTurnByTurn InitialState}
     end
 
     proc{InLoopTurnByTurn GameState}
@@ -99,8 +99,8 @@ define
     */
     proc{TurnByTurn}
         InitialState in
-            InitialState = {StartPlayers}
-            {InLoopTurnByTurn InitialState}
+        InitialState = {StartGame}
+        {InLoopTurnByTurn InitialState}
     end
 
 in
@@ -115,7 +115,7 @@ in
 
     %%%% 4 - Launch the game in the correct mode %%%%
     if(Input.isTurnByTurn) then
-        {TurnByTurn Input.nbPlayer}
+        {TurnByTurn}
     else
         {Simultaneous}
     end
