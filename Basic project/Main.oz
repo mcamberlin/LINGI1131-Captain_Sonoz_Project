@@ -11,6 +11,7 @@ import
     Input
     PlayerManager
     System
+    OS
 define
     GUIPORT
     PLAYER_PORTS
@@ -34,6 +35,27 @@ define
             nil
         end
     end
+
+    /**
+    @pre 
+        L = list
+        I = index
+        Item = what to change
+    @post
+    */
+    fun{Change L I Item}
+        case L
+        of H|T then
+            if(I == 1) then 
+                Item|T
+            else
+                H|{Change T I-1 Item}
+            end
+        else 
+            nil
+        end
+    end
+
     
     /** CreateEachPlayer
     @pre 
@@ -86,18 +108,19 @@ define
             Create a list of PlayerState representing the state of each player.
             Their place in the list correspond to their ID
         */
-        fun{StartPlayers NbPlayer}
+        fun{StartPlayers NbPlayer Acc}
             if(NbPlayer ==0) then
                 nil
             else
                 NewPlayerState 
                 in
                     NewPlayerState = playerState(
+                                                port: {Get PLAYER_PORTS Acc}
                                                 alive:true 
                                                 isAtSurface:true 
-                                                turnRemaining:0
+                                                turnAtSurface:0
                                                 )
-                    NewPlayerState | {StartPlayers NbPlayer-1}
+                    NewPlayerState | {StartPlayers NbPlayer-1 Acc+1}
             end
         end
 
@@ -105,11 +128,12 @@ define
     in
         InitialState = gameState(
                                 nbPlayersAlive: Input.nbPlayer
-                                playersState: {StartPlayers Input.nbPlayer}
+                                playersState: {StartPlayers Input.nbPlayer 1}
                                 )
         InitialState
     end
 
+    
     /** InLoopTurnByTurn
     @pre
         Gamestate = current game state
@@ -119,32 +143,62 @@ define
     proc{InLoopTurnByTurn GameState I}
         
         if(GameState.nbPlayersAlive >1) then
-            Index NewGameState CurrentPlayer in 
-                Index = I mod Input.GameState.nbPlayersAlive
-                CurrentPlayer = {Get GameState.playersState I}
-                
-                if(CurrentPlayer.isAtSurface == true) then
-                    {InLoopTurnByTurn GameState I+1}
+            Index CurrentPlayer in 
+            Index = I mod Input.GameState.nbPlayersAlive
+            CurrentPlayer = {Get GameState.playersState I}
+
+            %1                   
+            if (CurrentPlayer.turnAtSurface \= 0) then %the player can't play
+                NewPlayerState NewPlayersState NewGameState in
+                NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
+                NewPlayersState = {Change GameState.playersState Index NewPlayerState }
+                NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
+                {InLoopTurnByTurn NewGameState I+1}
+
+            %2
+            elseif(I<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
+                NewPlayerState NewPlayersState NewGameState ID Position Direction
+                in
+                {Send CurrentPlayer.port dive}
+                NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
+
+                {Send NewPlayerState.port move(ID Position Direction)}
+                {Wait ID} {Wait Position} {Wait Direction}
+                if(Direction == surface) then
+                    %4. the player want to go at surface 
+                    NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#1]}
+                    NewPlayersState = {Change GameState.playersState Index NewPlayerState }
+                    NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
+                    {Send NewPlayerState.port saySurface(ID)}
+                    {Send GUIPORT surface(ID)}
+                    {InLoopTurnByTurn NewGameState I+1}
                 else
-                    
-                end
+                    %5. the player want to move to a direction
+                    {Send NewPlayerState.port saySurface(ID)}
+                    {Send GUIPORT movePlayer(ID Position)}
+                    ID KindItem
+                    in
+                    {Send NewPlayerState.port chargeItem(ID KindItem)}
+                    {Wait ID} {Wait KindItem}
+                    {Send NewPlayerState.port sayCharge(ID KindItem)}
 
 
-
-
-            
-            {InLoopTurnByTurn NewGameState I+1}
+                end                                   
+            else
+                skip
+            end
         else
             {System.show {OS.Append 'VAINQUEUR: ' GameState.playersState.1}}
         end
     end
+    
 
     /** #TreatGame
     */
     proc{TurnByTurn}
         InitialState in
         InitialState = {StartGame}
-        {InLoopTurnByTurn InitialState}
+        {InLoopTurnByTurn InitialState 1}
     end
 
 in

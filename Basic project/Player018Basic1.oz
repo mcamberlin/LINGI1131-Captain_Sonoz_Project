@@ -862,7 +862,7 @@ in
             {TreatStream T {Move ID Position Direction State}}
         [] dive|T then
             {TreatStream T {Dive State}}
-        [] chargeItem(ID KindItem)|T then
+        [] chargechargeItem(ID KindItem)|T then
             {TreatStream T {ChargeItem ID KindItem State}}
         [] fireItem(ID KindItem)|T then 
             {TreatStream T {FireItem Item KindItem State}}
