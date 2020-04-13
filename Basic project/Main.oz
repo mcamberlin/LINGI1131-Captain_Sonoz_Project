@@ -56,11 +56,11 @@ define
         end
     end
 
-    proc{BroadCast PLAYER_PORTS M}
+    proc{Broadcast PLAYER_PORTS M}
         case PLAYER_PORTS
         of H|T then
             {Send H M}
-            {BroadCast T M}
+            {Broadcast T M}
         else
             skip
         end
@@ -145,61 +145,203 @@ define
 
     /** WhichFireItem
     @pre
+        KindFire 
+        ID = id of the 
+        PlayerState = playerState() of the player that decided to fire an item
+        GameState = current gameState()
     @post
+        return the newState of the Game
     */
-    proc{WhichFireItem KindFire ID GameState}
+    fun{WhichFireItem KindFire ID PlayerState GameState}
         case KindFire
-        of nil then skip
+        of nil then GameState
         [] missile(Position) then {Missile Position ID GameState}
-        /*[] mine(Position) then {Mine Position GameState}
-        [] sonar then {Sonar GameState}
-        [] drone(RowOrColumn Index) then {Drone RowOrColumn Index GameState}*/
+        [] mine(Position) then {Mine Position ID GameState}
+        [] sonar then {Sonar PlayerState GameState}
+        [] drone(RowOrColumn Index) then {Drone KindFire PlayerState GameState}
         else
-            skip
+            GameState
         end
     end
     
     /** Missile
     @pre 
-        Position
-        GameState
+        Position = position of where the missile lands
+        ID = id of the of the player who decides to fire a missile
+        PlayerState = playerState() of the player who decides to fire a missile
+        GameState = current game state
     @post
+        return the new current gameState()
     */
-    proc{Missile Position ID GameState}
-        case GameState.playersState 
-        of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS)|T then
-            Message in
-            {Send P sayMissileExplode(ID Position Message)}
-            {Wait Message}
+    fun{Missile Position ID GameState}
+        fun{RecursiveMissile PlayersState GameState}
+            case PlayersState 
+            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
+                if(A == false) then
+                    /** The player is already dead */
+                    {RecursiveMissile T GameState}
+                else
+                    Message 
+                    in
+                    {Send P sayMissileExplode(ID Position Message)}
+                    {Wait Message}
 
-            case Message
-            of sayDeath(ID) then 
-                NewGameState NewPlayersState NewPlayerState
-                in
-                {BroadCast PLAYER_PORTS sayDeath(ID)}
-                {Send GUIPORT removePlayer(ID)}
-                %mettre a false alive du joueur mort
-                NewPlayerState = {Get NewGameState.playersState ID}
-                NewPlayersState = {AdjoinList NewPlayerState [alive#false]}
-                NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]}                
-            
-            [] sayDamageTaken(ID Damage LifeLeft) then
-                NewGameState NewPlayersState NewPlayerState
-                in
-                {BroadCast PLAYER_PORTS sayDamageTaken(ID Damage LifeLeft)}
-                {Send GUIPORT lifeUpdate(ID LifeLeft)}
+                    case Message
+                    of sayDeath(ID_Dead_Submarine) then 
+                        NewGameState NewPlayersState NewPlayerState
+                        in
+                        {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
+                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
+                        
+                        NewPlayerState = {AdjoinList {Get NewGameState.playersState ID_Dead_Submarine} [alive#false]} %set to false the "alive" of the player dead
+                        NewPlayersState = {Change PlayersState ID_Dead_Submarine NewPlayerState}  
+                        NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
+                        
+                        {RecursiveMissile T NewGameState}
+                        
+                    [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
+                        {Broadcast PLAYER_PORTS sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft)}
+                        {Send GUIPORT lifeUpdate(ID_Damaged_Submarine LifeLeft)}
+
+                        {RecursiveMissile T GameState}
+                    else
+                        {System.show 'Message not understood'}
+                        {RecursiveMissile T GameState}
+                    end
+                end
             else
-                skip
+                GameState
             end
-
-        else
-            skip
         end
+    in
+        {RecursiveMissile GameState.playersState GameState}
     end
+
+    
+    /** Mine
+    @pre
+        Position = position of the mine
+        ID = ID of the placer of mines
+    @post
+        send the message sayMinePlaced() to everyone alive and the message putMine() to the GUI
+        return GameState
+    */
+    fun{Mine Position ID GameState}
+        fun{RecursiveMine Position ID PlayersState GameState}
+            case PlayersState
+            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then 
+                if(A == false) then
+                    /** The player is already dead */
+                    {RecursiveMine Position ID T GameState}
+                else
+                    {Send P sayMinePlaced(ID)}
+                    {RecursiveMine Position ID T GameState}
+                end
+            else
+                GameState
+            end
+        end
+    in
+        {Send GUIPORT putMine(ID Position)}
+        {RecursiveMine Position ID GameState.playersState GameState}
+    end
+
+
+    /** Sonar
+    @pre 
+        PlayerState = playerState() of the player to decided to fire an item
+        GameState = current gameState()
+    @post 
+        send a sayPassingSonar message to all players alive
+        send the response to the player that send a sonar request
+        return the new state of the game
+    */
+    fun{Sonar PlayerState GameState}
+        /** 
+        @pre 
+            PlayersState = liste de playerState
+        */
+        fun{RecursiveSonar PlayersState PlayerState GameState}
+            case PlayersState 
+            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
+                if(A == false) then 
+                    /** The player is already dead */
+                    {RecursiveSonar T PlayerState GameState}
+                else
+                    %A Sonar detection is occuring   
+                    ID Answer 
+                    in
+                    {Send P sayPassingSonar(ID Answer)}
+                    {Wait ID} {Wait Answer}
+
+                    case Answer 
+                    of pt(x:X y:Y) then
+                            %Send a message to the emitter of the sonar the position returned by the other players
+                            {Send PlayerState.port sayAnswerSonar(ID Answer)}      
+                            {RecursiveSonar T PlayerState GameState}                  
+                    else
+                        {System.show 'Message not understood'}
+                        {RecursiveSonar T PlayerState GameState}
+                    end
+                end
+            else
+                GameState
+            end
+        end
+    in
+        {RecursiveSonar GameState.playersState PlayerState GameState}
+    end
+
+    /** Drone
+    @pre
+        KindFire = <Drone>
+        PlayerState = playerState() of the player to decided to fire an item
+        GameState = current gameState()
+    */
+    fun{Drone KindFire PlayerState GameState}
+        /**
+        @pre
+            PlayersState = liste de playerState()
+        */
+        fun{RecursiveDrone KindFire PlayersState PlayerState GameState}
+            case PlayersState
+            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T  then
+                if(A == false) then
+                    /** The player is already dead */
+                    {RecursiveDrone KindFire T PlayerState GameState}
+                else
+                    %A Drone detection is occuring   
+                    ID Answer 
+                    in
+                    {Send P sayPassingDrone(KindFire ID Answer)}
+                    {Wait ID} {Wait Answer}
+
+                    case Answer 
+                    of true then
+                        %Send a message to the emitter of the drone the position returned by the other players
+                        {Send PlayerState.port sayAnswerDrone(ID Answer)}      
+                        {RecursiveDrone KindFire T PlayerState GameState}   
+
+                    [] false then
+                        %Send a message to the emitter of the drone the position returned by the other players
+                        {Send PlayerState.port sayAnswerDrone(ID Answer)}      
+                        {RecursiveDrone KindFire T PlayerState GameState}   
+                    else
+                        {RecursiveDrone KindFire T PlayerState GameState}
+                    end
+                end
+            else
+                GameState
+            end
+        end
+    in
+        {RecursiveDrone KindFire GameState.playersState PlayerState GameState}
+    end
+
 
     /** InLoopTurnByTurn
     @pre
-        Gamestate = current game state
+        GameState = current game state
         I = I in the playersState of the player that will play
     @post
     */
@@ -232,26 +374,26 @@ define
                     NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#1]}
                     NewPlayersState = {Change GameState.playersState Index NewPlayerState }
                     NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
-                    {BroadCast PLAYER_PORTS saySurface(ID)}
+                    {Broadcast PLAYER_PORTS saySurface(ID)}
                     {Send GUIPORT surface(ID)}
                     {InLoopTurnByTurn NewGameState I+1}
                 else
                     %5. the player want to move to a direction
-                    {BroadCast PLAYER_PORTS sayMove(ID Direction)}
+                    {Broadcast PLAYER_PORTS sayMove(ID Direction)}
                     {Send GUIPORT movePlayer(ID Position)}
                     %6. the player charge an item
                     ID KindItem
                     in
                     {Send NewPlayerState.port chargeItem(ID KindItem)}
                     {Wait ID} {Wait KindItem}
-                    {BroadCast PLAYER_PORTS sayCharge(ID KindItem)}
+                    {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
                     %7. the player fire the item
                     local ID KindFire
                     in
                         {Send NewPlayerState.port fireItem(ID KindFire)}
                         {Wait ID} {Wait KindFire}
 
-                        {WhichFireItem KindFire ID GameState}
+                        NewGameState = {WhichFireItem KindFire ID NewPlayerState GameState}
                     end
                     
 
