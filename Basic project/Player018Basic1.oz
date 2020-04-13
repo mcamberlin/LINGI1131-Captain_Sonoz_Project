@@ -436,6 +436,11 @@ in
 
 
     /** SaySurface 
+    @pre 
+        ID = Bound
+        State
+    @post
+
     */
     fun{SaySurface ID State}
         if(State.surface) then 
@@ -836,6 +841,7 @@ in
                             damage:0
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
+                            mines: nil
                             )
         thread
             {TreatStream Stream InitialState}

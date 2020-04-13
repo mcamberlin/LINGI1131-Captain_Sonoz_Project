@@ -46,42 +46,62 @@ define
             nil
         end
     end
-/* 
-    proc{TurnByTurn NbPlayerRemaining}
-        case PLAYER_PORTS 
-        of H|T then %H is the number of the port for the player
-            % nous avons acces seulement au port du joueur, donc nous pouvons juste lui envoyer les messages qui sont fait dans Player
-            
-            %1. check if the su
-            {Send H saySurface(ID)}
-            {Wait ID}
-            if ID \= nil then          % the submarine is underwater and its id is ID
-                %2. ....
-
-
-
-            else                       % the submarine is at surface 
-
-            end
-
-        else %end of the turn, everyone played 
-            {Simultaneous}
-        end
-
-    end
 
     proc{Simultaneous}
         skip
     end
 
-    proc{LaunchGame}
-        if(Input.isTurnByTurn) then
-            {TurnByTurn Input.nbPlayer}
-        else
-            {Simultaneous}
+
+
+    /** StartGame
+        @pre
+        @post 
+            Create a gameState representing the current state of the Game
+    */
+    fun{StartGame}
+        
+        /** StartPlayers
+        @pre
+        @post
+            Create a list of PlayerState representing the state of each player.
+            Their place in the list correspond to their ID
+        */
+        fun{StartPlayers NbPlayer}
+            if(NbPlayers ==0) then
+                nil
+            else
+                NewPlayerState 
+                in
+                    NewPlayerState = playerState(
+                                                alive:true 
+                                                isAtSurface:true 
+                                                turnRemaining:0
+                                                )
+                    NewPlayerState | {StartPlayer NbPlayer-1}
+            end
         end
+
+        InitialState
+    in
+        InitialState = gameState(
+                                nbPlayersAlive: Input.nbPlayers
+                                playersState: {StartPlayers Input.nbPlayer}
+                                )
+        InitialState
+        {InLoopTurnByTurn InitialState}
     end
-*/
+
+    proc{InLoopTurnByTurn GameState}
+        skip
+    end
+
+    /** #TreatGame
+    */
+    proc{TurnByTurn}
+        InitialState in
+            InitialState = {StartPlayers}
+            {InLoopTurnByTurn InitialState}
+    end
 
 in
     {System.show 'Start'}
@@ -94,8 +114,11 @@ in
     PLAYER_PORTS = {CreateEachPlayer Input.nbPlayer Input.players Input.colors 1}
 
     %%%% 4 - Launch the game in the correct mode %%%%
-
-    %{LaunchGame}
+    if(Input.isTurnByTurn) then
+        {TurnByTurn Input.nbPlayer}
+    else
+        {Simultaneous}
+    end
 
     {System.show 'Stop'}
 end
