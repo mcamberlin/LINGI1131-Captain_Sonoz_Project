@@ -271,16 +271,16 @@ define
                     %A Sonar detection is occuring   
                     ID Answer 
                     in
-                    {Send P sayPassingSonar(ID Answer)}
+                    {Send P sayPassingSonar(Drone ID Answer)}
                     {Wait ID} {Wait Answer}
 
-                    case Answer 
+                    case Drone
                     of pt(x:X y:Y) then
                             %Send a message to the emitter of the sonar the position returned by the other players
                             {Send PlayerState.port sayAnswerSonar(ID Answer)}      
                             {RecursiveSonar T PlayerState GameState}                  
                     else
-                        {System.show 'Message not understood'}
+                        {System.show 'Message not understood (not a sonar)'}
                         {RecursiveSonar T PlayerState GameState}
                     end
                 end
@@ -315,7 +315,10 @@ define
                     in
                     {Send P sayPassingDrone(KindFire ID Answer)}
                     {Wait ID} {Wait Answer}
-
+                    {Send PlayerState.port sayAnswerDrone(ID Answer)}      
+                    {RecursiveDrone KindFire T PlayerState GameState}  
+                    /* 
+                    Pas nécessaire car sayAnswerDrone dit deja si touché ou pas 
                     case Answer 
                     of true then
                         %Send a message to the emitter of the drone the position returned by the other players
@@ -329,6 +332,7 @@ define
                     else
                         {RecursiveDrone KindFire T PlayerState GameState}
                     end
+                    */
                 end
             else
                 GameState
