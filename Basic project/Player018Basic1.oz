@@ -386,20 +386,20 @@ in
                 NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
                 NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
                 ID = state.id
-                Mine = nil
+                Mine = null
                 
                 NewState
             else /*Fired an existing mine */
                 if(State.mines == nil) then /*None mine has been placed before */
                     NewState = State
                     ID = State.id
-                    Mine = nil
+                    Mine = null
                     NewState
                 else /* The mine at the first position in mines() exposes  */
                     NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
                     NewState = {AdjoinList State [mines#NewMines]}
                     ID = State.id
-                    Mine = mine(State.mines.1)
+                    Mine = State.mines.1
                     NewState
                 end
             end
@@ -407,13 +407,13 @@ in
             if(State.mines == nil) then /*None mine has been placed before */
                 NewState = State
                 ID = State.id
-                Mine = nil
+                Mine = null
                 NewState
             else /* The mine at the first position in mines() exposes  */
                 NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
                 NewState = {AdjoinList State [mines#NewMines]}
                 ID = State.id
-                Mine = mine(State.mines.1)
+                Mine = State.mines.1
                 NewState
             end
         end     
@@ -473,7 +473,7 @@ in
         State
     end
 
-    /** SayMinedPlaced 
+    /** SayMinePlaced 
     */
     fun{SayMinePlaced ID State}
         {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' placed a mine.'}}
@@ -844,7 +844,7 @@ in
         {NewPort Stream Port}
         InitialState = state(id: id(id:ID color:Color name:Name) 
                             position: pt(x:1 y:1) 
-                            lastPosition: nil 
+                            lastPositions: nil 
                             direction: east
                             surface: true
                             dive: false 
