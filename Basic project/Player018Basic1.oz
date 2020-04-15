@@ -338,13 +338,12 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = mine({PositionMine NewState.position}) 
-            NewState
+
         elseif State.weapons.missile > 0 then
             NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
-            KindFire = missile({PositionMissile NewState.position})    
-            NewState
+            KindFire = missile({PositionMissile NewState.position})   
 
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
@@ -359,20 +358,23 @@ in
                     KindFire = drone(column :PositionSelected.y)
                 end
             end
-            NewState
 
         elseif State.weapons.sonar > 0 then
             NewWeapon = {AdjoinList State.weapons [sonar#State.weapons.sonar-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = sonar
-            NewState
 
         else 
             ID = State.id
             KindFire = null
-            State
+            NewState = State
         end
+
+        ID = State.id
+        {System.show 'the weapon fired is '}
+        {System.show KindFire}
+        NewState
         
     end
 
@@ -494,7 +496,7 @@ in
     /** SayMinePlaced 
     */
     fun{SayMinePlaced ID State}
-        {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' placed a mine.'}}
+        {System.show 'The player placed a mine.'}
         ID = State.id
         State
     end

@@ -128,7 +128,7 @@ define
                                                 port: {Get PLAYER_PORTS Acc}
                                                 alive:true 
                                                 isAtSurface:true 
-                                                turnAtSurface:0
+                                                turnAtSurface:Input.turnSurface
                                                 )
                     NewPlayerState | {StartPlayers NbPlayer-1 Acc+1}
             end
@@ -425,7 +425,7 @@ define
             
 
             %1                   
-            if (CurrentPlayer.turnAtSurface \= 0) then %the player can't play
+            if (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
             %NOTE : pas sur que ca fonctionnne A DISCUTER car CurrentPlayer.turnAtSurface ne sera jamais a 0 :/
                 NewPlayerState NewPlayersState NewGameState in
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
