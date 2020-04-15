@@ -72,7 +72,7 @@ in
         in
             ID = State.id
             Position = {RandomPosition} %{AskPosition}
-            {AdjoinList State [position#Position]} %return le nouvel etat
+            {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
         end
     end
 
@@ -121,7 +121,10 @@ in
                 end
             end
         in
-            {Contains State.lastPositions Position}
+            if State.lastPositions == nil then false 
+            else
+                {Contains State.lastPositions Position}
+            end
         end
 
         /** Last
@@ -146,18 +149,23 @@ in
         NewState
     in
         NewDirection = {RandomDirection}
+        {System.show 'la direction choisie pour Move est : '}
+        {System.show NewDirection}
         case NewDirection 
         of surface then 
             NewPosition = {Last State.lastPositions}
         [] north then 
-            NewPosition = pt(x:(Position.x-1) y:Position.y)
+            NewPosition = pt(x:(State.position.x-1) y:State.position.y)
         [] south then 
-            NewPosition = pt(x:(Position.x+1) y:Position.y)
+            NewPosition = pt(x:(State.position.x+1) y:State.position.y)
         [] east then 
-            NewPosition = pt(x:Position.x y:(Position.y+1))
+            NewPosition = pt(x:State.position.x y:(State.position.y+1))
         else /* west*/
-            NewPosition = pt(x:Position.x y:(Position.y-1))
+            NewPosition = pt(x:State.position.x y:(State.position.y-1))
         end 
+
+        {System.show 'la nouvelle position est : '}
+        {System.show NewPosition}
 
         if( {Not {IsPositionOnMap NewPosition} } ) then 
             {System.show 'The direction selected is outside the map'}
@@ -178,9 +186,11 @@ in
             if(NewDirection == surface) then
                 NewState = {AdjoinList State [surface#true lastPositions# [nil] ]} % reset the last positions visited since last surface phase
             else
-                NewState = {AdjoinList State [position#NewPosition lastPositions#({OS.Append lastPositions NewPosition})]}  /*Add the NewPosition To The position visited*/
+                NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
             end
             
+            {System.show 'Fin de la fonction Move. Le nouvel état du jouer (State) est :'}
+            {System.show NewState}
             NewState %return
         end
     end 
@@ -225,6 +235,8 @@ in
         NewState NewLoad NewWeapons NewLoads NewItem
     in
         NewItem = {RandomItem}
+        {System.show 'L item choisi dans chargeItem est : '}
+        {System.show NewItem}
         case NewItem
         of missile then
             %Increase the loads of missile
@@ -239,9 +251,9 @@ in
                 
                 % the player should say that a new missile has been created by binding the given item
                 KindItem = missile
-                {System.show {OS.Append 'The number of missile has increased for player ' NewState.id.id}}
+                {System.show 'The number of missile has increased'}
             else
-                KindItem = nil
+                KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]}
             end  
 
@@ -258,9 +270,9 @@ in
 
                 % the player should say that a new item has been created by binding the given item
                 KindItem = mine
-                {System.show {OS.Append 'The number of mine has increased for player ' State.id.id}}
+                {System.show 'The number of mine has increased'}
             else
-                KindItem = nil
+                KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end       
         [] sonar then 
@@ -276,9 +288,9 @@ in
 
                 % the player should say that a new sonar has been created by binding the given item
                 KindItem = sonar
-                {System.show {OS.Append 'The number of sonar has increased for player ' State.id.id}}
+                {System.show 'The number of sonar has increased for player'}
             else
-                KindItem = nil
+                KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end       
         [] drone then
@@ -294,9 +306,9 @@ in
         
                 % the player should say that a new drone has been created by binding the given item
                 KindItem = drone
-                {System.show {OS.Append 'The number of drone has increased for player ' State.id.id}}
+                {System.show 'The number of drone has increased for player'}
             else
-                KindItem = nil
+                KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]} 
             end   
         else
@@ -357,7 +369,8 @@ in
             NewState
 
         else 
-            KindFire = nil
+            ID = State.id
+            KindFire = null
             State
         end
         
@@ -435,7 +448,8 @@ in
         Announce to the others that the player with id ID has changed direction to Direction
     */
     fun{SayMove ID Direction State}
-        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' has moved in the direction'}} Direction}
+        {System.show 'Le joueur a changé de direction vers'}
+        {System.show Direction}
         State
     end
 
@@ -469,7 +483,11 @@ in
         Announce to the others that the player with id ID has charged the item KindItem
     */
     fun{SayCharge ID KindItem State}
-        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' has charged a'}} KindItem}
+        if KindItem == null then {System.show 'the player cannot charge an item'}
+        else
+            {System.show 'The player charged a'}
+            {System.show KindItem}
+        end
         State
     end
 
@@ -809,6 +827,7 @@ in
         false otherwise    
     */
     fun{IsPositionOnMap Position}
+        {System.show Position}
         {IsOnMap Position.x Position.y}
     end
 
@@ -872,11 +891,11 @@ in
             {TreatStream T {Move ID Position Direction State}}
         [] dive|T then
             {TreatStream T {Dive State}}
-        [] chargechargeItem(ID KindItem)|T then
+        [] chargeItem(ID KindItem)|T then
             {TreatStream T {ChargeItem ID KindItem State}}
         [] fireItem(ID KindFire)|T then 
             {TreatStream T {FireItem ID KindFire State}}
-        [] firemine(ID Mine)|T then
+        [] fireMine(ID Mine)|T then
             {TreatStream T {FireMine ID Mine State}}
         [] isDead(Answer)|T then 
             {TreatStream T {IsDead Answer State}}
@@ -905,7 +924,7 @@ in
         [] sayDamagetaken(ID Damage Lifeleft)|T then
             {TreatStream T {SayDamageTaken ID Damage Lifeleft State}}
         else
-            skip
+            {System.show 'MESSAGE NOT UNDERSTOOD IN TREATSTREAM IN PLAYER'}
         end
     end
 end

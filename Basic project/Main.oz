@@ -348,51 +348,6 @@ define
         
         @post: return a new GameState
 
-        Exemple Missile
-    fun{Missile Position ID GameState}
-        fun{RecursiveMissile PlayersState GameState}
-            case PlayersState 
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
-                if(A == false) then
-                    % The player is already dead
-                    {RecursiveMissile T GameState}
-                else
-                    Message 
-                    in
-                    {Send P sayMissileExplode(ID Position Message)}
-                    {Wait Message}
-
-                    case Message
-                    of sayDeath(ID_Dead_Submarine) then 
-                        NewGameState NewPlayersState NewPlayerState
-                        in
-                        {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
-                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
-                        
-                        NewPlayerState = {AdjoinList {Get NewGameState.playersState ID_Dead_Submarine} [alive#false]} %set to false the "alive" of the player dead
-                        NewPlayersState = {Change PlayersState ID_Dead_Submarine NewPlayerState}  
-                        NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
-                        
-                        {RecursiveMissile T NewGameState}
-                        
-                    [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
-                        {Broadcast PLAYER_PORTS sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft)}
-                        {Send GUIPORT lifeUpdate(ID_Damaged_Submarine LifeLeft)}
-
-                        {RecursiveMissile T GameState}
-                    else
-                        {System.show 'Format of Message not understood in Missile'}
-                        {RecursiveMissile T GameState}
-                    end
-                end
-            else
-                GameState
-            end
-        end
-    in
-        {RecursiveMissile GameState.playersState GameState}
-    end
-        
      */
      fun{ExplodeMine Mine ID NewPlayerState GameState}
         fun{RecursiveExplodeMine PlayersState GameState}
@@ -454,12 +409,20 @@ define
         if(GameState.nbPlayersAlive >1) then
 
             {System.show 'C est parti pour le tour'}
-            
-            Index CurrentPlayer in 
-            Index = I mod (Input.nbPlayer+1)
-            CurrentPlayer = {Get GameState.playersState I}
+            {System.show I}
 
+            Index TestIndex CurrentPlayer in 
+            TestIndex = I mod (Input.nbPlayer)
+            if TestIndex == 0 then Index = 3
+            else
+                Index = TestIndex
+            end
+            CurrentPlayer = {Get GameState.playersState Index}
+
+            {System.show 'pour le joueur'}
             {System.show Index}
+
+            
 
             %1                   
             if (CurrentPlayer.turnAtSurface \= 0) then %the player can't play
@@ -473,6 +436,7 @@ define
                 {InLoopTurnByTurn NewGameState I+1}
 
             %2
+            {System.show '%2.'}
             elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
                 NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine
                 in
@@ -480,27 +444,34 @@ define
                 NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
 
                 %3. Ask the direction 
+                {System.show '%3.'}
                 {Send NewPlayerState.port move(ID Position Direction)}
                 {Wait ID} {Wait Position} {Wait Direction}
                 if(Direction == surface) then
                     %4. the player want to go at surface 
+                    {System.show '%4.'}
                     NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#1]}
                     NewPlayersState = {Change GameState.playersState Index NewPlayerState }
                     NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
                     {Broadcast PLAYER_PORTS saySurface(ID)}
                     {Send GUIPORT surface(ID)}
+                    {System.show 'Fin du tour pour le joueur'}
+                    {System.show Index}
                     {InLoopTurnByTurn NewGameState I+1}
                 else
                     %5. the player want to move to a direction
-                    {Broadcast PLAYER_PORTS sayMove(ID Direction)}
+                    {System.show '%5.'}
+                    %{Broadcast PLAYER_PORTS sayMove(ID Direction)}
                     {Send GUIPORT movePlayer(ID Position)}
                     %6. the player charge an item
+                    {System.show '%6.'}
                     ID KindItem
                     in
                     {Send NewPlayerState.port chargeItem(ID KindItem)}
                     {Wait ID} {Wait KindItem}
                     {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
                     %7. the player fire the item
+                    {System.show '%7.'}
                     local ID KindFire
                     in
                         {Send NewPlayerState.port fireItem(ID KindFire)}
@@ -510,6 +481,7 @@ define
                     end
 
                     %8. the player can explode a mine after fire a item (GameStateFire)
+                    {System.show '%8.'}
                     local ID Mine
                     in
                         {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
@@ -519,11 +491,14 @@ define
 
                     NewGameState = GameStateMine
 
+                    {System.show 'Fin du tour pour le joueur'}
+                    {System.show Index}
                     {InLoopTurnByTurn NewGameState I+1}
                     
 
                 end                                   
             else
+                {System.show 'probleme dans les conditions turnbyturn'}
                 skip
             end
         else
