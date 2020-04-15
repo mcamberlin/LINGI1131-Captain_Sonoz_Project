@@ -371,7 +371,7 @@ in
             NewState = State
         end
 
-        ID = State.id
+        
         {System.show 'the weapon fired is '}
         {System.show KindFire}
         NewState
@@ -391,41 +391,41 @@ in
     */
     fun{FireMine ID Mine State}
         Fire NewWeapons NewMines NewState in
-        /*They are mines ready to be fired */
-        if(State.weapons.mine >0) then 
+        
+        if(State.weapons.mine >0) then /*They are mines ready to be fired */
             Fire = {OS.rand} mod 2
             /** Choose between place a new mine or fired an existing one */
             case Fire
-            of 0 then  /*A mine is placed */ 
-                NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
+            of 0 then  /*No mine exploded */ 
+                /*NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
                 NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
-                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
-                ID = state.id
+                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}*/
+                ID = State.id
                 Mine = null
                 
-                NewState
+                State
             else /*Fired an existing mine */
                 if(State.mines == nil) then /*None mine has been placed before */
                     NewState = State
                     ID = State.id
                     Mine = null
                     NewState
-                else /* The mine at the first position in mines() exposes  */
-                    NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
+                else /* The mine at the first position in mines() explodes  */
+                    NewMines = State.mines.2
                     NewState = {AdjoinList State [mines#NewMines]}
                     ID = State.id
                     Mine = State.mines.1
                     NewState
                 end
             end
-        else /* The load of mine is empty => Expose an existing one */
-            if(State.mines == nil) then /*None mine has been placed before */
+        else % The load of mine is empty => Explode an existing one 
+            if(State.mines == nil) then %None mine has been placed before 
                 NewState = State
                 ID = State.id
                 Mine = null
                 NewState
-            else /* The mine at the first position in mines() exposes  */
-                NewMines = {AdjoinList State.mines [mines#(State.mines.2)]}
+            else % The mine at the first position in mines() exposes  
+                NewMines = State.mines.2
                 NewState = {AdjoinList State [mines#NewMines]}
                 ID = State.id
                 Mine = State.mines.1
@@ -496,8 +496,9 @@ in
     /** SayMinePlaced 
     */
     fun{SayMinePlaced ID State}
-        {System.show 'The player placed a mine.'}
-        ID = State.id
+        {System.show 'A mine has been placed by the player :'}
+        {System.show ID.id}
+        
         State
     end
 
@@ -719,16 +720,11 @@ in
     /** SayDamageTaken 
     */
     fun {SayDamageTaken ID Damage LifeLeft State}
-        {System.show {OS.Append {OS.Append 
-                            {OS.Append 
-                                    {OS.Append 'The player ' State.id.id} 
-                                    ' received '} 
-                            Damage}}}
-        {System.show {OS.Append {OS.Append 
-                            {OS.Append 
-                                    {OS.Append 'The player ' State.id.id} 
-                                    ' has a total health point of '} 
-                            LifeLeft}}}
+        {System.show 'The player take a total damage of '}
+        {System.show Damage}
+        {System.show 'His health point is '}
+        {System.show LifeLeft}
+        
         State        
     end
 
@@ -923,8 +919,8 @@ in
             {TreatStream T {SayAnswerSonar ID Answer State}}
         [] sayDeath(ID)|T then
             {TreatStream T {SayDeath ID State}}
-        [] sayDamagetaken(ID Damage Lifeleft)|T then
-            {TreatStream T {SayDamageTaken ID Damage Lifeleft State}}
+        [] sayDamagetaken(ID Damage LifeLeft)|T then
+            {TreatStream T {SayDamageTaken ID Damage LifeLeft State}}
         else
             {System.show 'MESSAGE NOT UNDERSTOOD IN TREATSTREAM IN PLAYER'}
         end

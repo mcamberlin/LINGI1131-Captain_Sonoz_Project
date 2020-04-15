@@ -185,6 +185,8 @@ define
                     in
                     {Send P sayMissileExplode(ID Position Message)}
                     {Wait Message}
+                    {System.show 'A missile has been launched and the message is '}
+                    {System.show Message}
 
                     case Message
                     of sayDeath(ID_Dead_Submarine) then 
@@ -205,7 +207,7 @@ define
 
                         {RecursiveMissile T GameState}
                     else
-                        {System.show 'Format of Message not understood in Missile'}
+                        {System.show 'Format of Message is not death or damage'}
                         {RecursiveMissile T GameState}
                     end
                 end
@@ -243,6 +245,8 @@ define
         end
     in
         {Send GUIPORT putMine(ID Position)}
+        {System.show 'A mine has been place in the position'}
+        {System.show Position}
         {RecursiveMine Position ID GameState.playersState GameState}
     end
 
@@ -358,7 +362,7 @@ define
                     {RecursiveExplodeMine T GameState}
                 else
                     Message in 
-                    {Send P sayMineMineExplode(ID Mine Message)}
+                    {Send P sayMineExplode(ID Mine Message)}
                     {Wait Message}
 
                     case Message 
