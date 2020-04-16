@@ -389,31 +389,53 @@ in
         ID = unbound
         Mine = unbound
     @post
-        if a mine is ready to be fired, we randomly decided to placed a new mine or to explose an existing one.
-        otherwise the mine at the first position in mines() is explosed.
+        if a mine is ready to be fired, we randomly decided to explode it or not.
     */
     fun{FireMine ID Mine State}
-        Fire NewWeapons NewMines NewState in
-        
-        if(State.weapons.mine >0) then /*They are mines ready to be fired */
+        Fire NewState in
+        case State.mines 
+        of M|T then
             Fire = {OS.rand} mod 2
-            /** Choose between place a new mine or fired an existing one */
+            if Fire == 0 then %The first mine of the list explodes
+                Mine = M
+                ID = State.id
+                NewState = {AdjoinList State [mines#T]}
+                NewState
+            else %The mine do not explode
+                Mine = null
+                ID = State.id
+                State
+            end
+        else %no more mine placed
+            Mine = null
+            ID = State.id
+            State
+        end
+    end
+
+
+
+        /* 
+    fun{FireMine ID Mine State} %version Merlin
+        if(State.weapons.mine >0) then %They are mines ready to be fired 
+            Fire = {OS.rand} mod 2
+            % Choose between place a new mine or fired an existing one 
             case Fire
-            of 0 then  /*No mine exploded */ 
-                /*NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
-                NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
-                NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}*/
+            of 0 then  %No mine exploded 
+                %NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
+                %NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
+                %NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
                 ID = State.id
                 Mine = null
                 
                 State
-            else /*Fired an existing mine */
-                if(State.mines == nil) then /*None mine has been placed before */
+            else %Fired an existing mine 
+                if(State.mines == nil) then %No mine has been placed before 
                     NewState = State
                     ID = State.id
                     Mine = null
                     NewState
-                else /* The mine at the first position in mines() explodes  */
+                else % The mine at the first position in mines() explodes  
                     NewMines = State.mines.2
                     NewState = {AdjoinList State [mines#NewMines]}
                     ID = State.id
@@ -434,8 +456,8 @@ in
                 Mine = State.mines.1
                 NewState
             end
-        end     
-    end
+        end 
+    end*/   
 
     /** IsDead
     the player is dead if his damage is greater than Input.maxDamage

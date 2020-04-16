@@ -363,7 +363,11 @@ define
                 else
                     Message in 
                     {Send P sayMineExplode(ID Mine Message)}
+                    {System.show 'The Message in ExplodeMine is :'}
+                    
                     {Wait Message}
+                    
+                    {System.show Message}
 
                     case Message 
                     of sayDeath(ID_Dead_Submarine) then 
