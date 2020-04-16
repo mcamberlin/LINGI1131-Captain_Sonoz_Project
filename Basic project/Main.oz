@@ -275,10 +275,10 @@ define
                     %A Sonar detection is occuring   
                     ID Answer 
                     in
-                    {Send P sayPassingSonar(Drone ID Answer)}
+                    {Send P sayPassingSonar(ID Answer)}
                     {Wait ID} {Wait Answer}
 
-                    case Drone
+                    case Answer
                     of pt(x:X y:Y) then
                             %Send a message to the emitter of the sonar the position returned by the other players
                             {Send PlayerState.port sayAnswerSonar(ID Answer)}      

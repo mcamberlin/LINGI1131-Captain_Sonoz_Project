@@ -167,17 +167,20 @@ in
         {System.show 'la nouvelle position est : '}
         {System.show NewPosition}
 
-        if( {Not {IsPositionOnMap NewPosition} } ) then 
-            {System.show 'The direction selected is outside the map'}
-            {Move ID Position Direction State}
-        
-        elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
-            {System.show 'The direction selected correspond to an island'}
-            {Move ID Position Direction State}
+        if {Not {IsPositionOnMap NewPosition} } orelse {IsIsland NewPosition.x NewPosition.y Input.map} orelse {IsAlreadyVisited NewPosition State} then
 
-        elseif {IsAlreadyVisited NewPosition State} then
-            {System.show 'The direction selected correspond to a spot already visited'}
-            {Move ID Position Direction State}
+            if( {Not {IsPositionOnMap NewPosition} } ) then 
+                {System.show 'The direction selected is outside the map'}
+                {Move ID Position Direction State}
+            
+            elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
+                {System.show 'The direction selected correspond to an island'}
+                {Move ID Position Direction State}
+
+            else %{IsAlreadyVisited NewPosition State} then
+                {System.show 'The direction selected correspond to a spot already visited'}
+                {Move ID Position Direction State}
+            end
 
         else
             ID = State.id
@@ -676,21 +679,21 @@ in
         false otherwise
     */
     fun{SayPassingSonar ID Answer State}
-        NewPosition Rand
+        Rand RandomPos
     in
         if(State.damage == Input.maxDamage) then %the submarine is already dead
             ID = nil
             Answer = nil
             State
         else
-            NewPosition = {RandomPosition}
+            RandomPos = {RandomPosition}
             Rand = {OS.rand} mod 2
             if(Rand == 0) then
-                Answer = {AdjoinList NewPosition [x#NewPosition.x y#State.position.y]}
+                Answer = pt(x:RandomPos.x y:State.position.y)
                 ID = State.id
                 State
             else
-                Answer = {AdjoinList NewPosition [x#State.position.x y#NewPosition.y]}
+                Answer = pt(x:State.position.x y:RandomPos.y)
                 ID = State.id
                 State
             end
@@ -701,7 +704,8 @@ in
     /** SayAnswerSonar 
     */
     fun{SayAnswerSonar ID Answer State}
-        {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detect an ennemy around the position '} Answer}}
+        {System.show 'The player s sonar detect an ennemy around the position '}
+        {System.show Answer}
         State
     end
 
@@ -785,7 +789,7 @@ in
                             false
                         end
                     else
-                        {IsIsland X Y-1 T2}
+                        {IsIsland X Y-1 T2|T1}
                     end
                 else
                     false
@@ -806,8 +810,8 @@ in
         false otherwise    
     */
     fun{IsOnMap X Y}
-        if(X<Input.nRow andthen X>0) then
-            if(Y<Input.nColumn andthen Y>0) then
+        if(X=<Input.nRow andthen X>0) then
+            if(Y=<Input.nColumn andthen Y>0) then
                 true
             else
                 false
@@ -825,7 +829,6 @@ in
         false otherwise    
     */
     fun{IsPositionOnMap Position}
-        {System.show Position}
         {IsOnMap Position.x Position.y}
     end
 
@@ -919,7 +922,7 @@ in
             {TreatStream T {SayAnswerSonar ID Answer State}}
         [] sayDeath(ID)|T then
             {TreatStream T {SayDeath ID State}}
-        [] sayDamagetaken(ID Damage LifeLeft)|T then
+        [] sayDamageTaken(ID Damage LifeLeft)|T then
             {TreatStream T {SayDamageTaken ID Damage LifeLeft State}}
         else
             {System.show 'MESSAGE NOT UNDERSTOOD IN TREATSTREAM IN PLAYER'}
