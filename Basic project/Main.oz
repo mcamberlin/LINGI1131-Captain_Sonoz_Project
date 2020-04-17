@@ -504,6 +504,7 @@ define
                         {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
                         {Wait ID} {Wait Mine}
                         GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
+                        {Send GUIPORT removeMine(ID Mine)}
                     end
 
                     NewGameState = GameStateMine

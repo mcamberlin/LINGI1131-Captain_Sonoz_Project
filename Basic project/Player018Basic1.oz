@@ -564,7 +564,7 @@ in
             end
         [] 1 then 
             NewDamage = State.damage +1 
-            if NewState.damage >= Input.maxDamage then  /*Dead */
+            if NewDamage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(NewState.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
@@ -573,7 +573,7 @@ in
                 Message = sayDamageTaken(NewState.id 1 Input.maxDamage-NewState.damage)
                 NewState
             end
-        else
+        else %Distance >= 2
             Message = nil
             State
         end
@@ -608,7 +608,7 @@ in
             end
         [] 1 then 
             NewDamage = State.damage +1 
-            if NewState.damage >= Input.maxDamage then  /*Dead */
+            if NewDamage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(NewState.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
@@ -743,7 +743,8 @@ in
         Display an informative message of the death of the player id
     */
     fun{SayDeath ID State}
-        {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' is dead '}}
+        {System.show 'This player is dead :'}
+        {System.show ID.id}
         State
     end
 
