@@ -404,7 +404,6 @@ define
             end
         end
     in
-        {Send GUIPORT fireMine(ID Mine)}
         if Mine == null then GameState
         else
             {RecursiveExplodeMine GameState.playersState GameState}
@@ -504,7 +503,7 @@ define
                         {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
                         {Wait ID} {Wait Mine}
                         GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
-                        {Send GUIPORT removeMine(ID Mine)}
+                        {Send GUIPORT removeMine(ID.id Mine)}
                     end
 
                     NewGameState = GameStateMine

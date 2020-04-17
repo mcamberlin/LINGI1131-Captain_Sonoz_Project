@@ -554,7 +554,7 @@ in
         of 0 then 
             NewDamage = State.damage +2 
             if NewDamage >= Input.maxDamage then /*Dead */
-                Message = sayDeath(NewState.id)
+                Message = sayDeath(State.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
@@ -565,7 +565,7 @@ in
         [] 1 then 
             NewDamage = State.damage +1 
             if NewDamage >= Input.maxDamage then  /*Dead */
-                Message = sayDeath(NewState.id)
+                Message = sayDeath(State.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
@@ -598,7 +598,7 @@ in
         of 0 then 
             NewDamage = State.damage +2 
             if NewDamage >= Input.maxDamage then /*Dead */
-                Message = sayDeath(NewState.id)
+                Message = sayDeath(State.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
@@ -609,7 +609,7 @@ in
         [] 1 then 
             NewDamage = State.damage +1 
             if NewDamage >= Input.maxDamage then  /*Dead */
-                Message = sayDeath(NewState.id)
+                Message = sayDeath(State.id)
                 NewState = {AdjoinList State [damage#NewDamage surface#true]}
                 NewState
             else
