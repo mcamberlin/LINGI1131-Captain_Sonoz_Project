@@ -167,35 +167,39 @@ in
         {System.show 'la nouvelle position est : '}
         {System.show NewPosition}
 
-        if {Not {IsPositionOnMap NewPosition} } orelse {IsIsland NewPosition.x NewPosition.y Input.map} orelse {IsAlreadyVisited NewPosition State} then
-
-            if( {Not {IsPositionOnMap NewPosition} } ) then 
-                {System.show 'The direction selected is outside the map'}
-                {Move ID Position Direction State}
-            
-            elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
-                {Move ID Position Direction State}
-
-            else %{IsAlreadyVisited NewPosition State} then
-                {System.show 'The direction selected correspond to a spot already visited'}
-                {Move ID Position Direction State}
-            end
-
-        else
+        if(NewDirection == surface) then
+            NewState = {AdjoinList State [surface#true lastPositions#nil ]} % reset the last positions visited since last surface phase
+            {System.show 'Fin de la fonction Move. Le nouvel état du jouer (State) est :'}
+            {System.show NewState}
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
-            if(NewDirection == surface) then
-                NewState = {AdjoinList State [surface#true lastPositions# [nil] ]} % reset the last positions visited since last surface phase
-            else
-                NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
-            end
+            NewState %return
+
+        elseif( {Not {IsPositionOnMap NewPosition} } ) then 
+            {System.show 'The direction selected is outside the map'}
+            {Move ID Position Direction State}
+        
+        elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
+            {System.show 'The direction selected correspond to an island'}
+            {Move ID Position Direction State}
+
+        elseif{IsAlreadyVisited NewPosition State} then
+            {System.show 'The direction selected correspond to a spot already visited'}
+            {Move ID Position Direction State}
+
+        else
+
+            NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
             
             {System.show 'Fin de la fonction Move. Le nouvel état du jouer (State) est :'}
             {System.show NewState}
+            ID = State.id
+            Position = NewPosition
+            Direction = NewDirection
             NewState %return
         end
+        
     end 
 
     
@@ -490,14 +494,10 @@ in
     */
     fun{SaySurface ID State}
         if(State.surface) then 
-            {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' has made surface.'}}
-            ID = nil
+            {System.show 'the player has made surface'}
         else 
-            {System.show {OS.Append {OS.Append 'The player ' State.id.id} ' is underwater.'}}
-            ID = State.id
+            {System.show 'The player is underwater'}
         end
-
-        
         State
     end
 
@@ -545,7 +545,11 @@ in
     fun{SayMissileExplode ID Position Message State}
         Distance NewState NewDamage
     in
+        {System.show 'inside sayMissileExplode. ManhattanDistance :'}
+        
         Distance = {ManhattanDistance Position State.position}
+        
+        {System.show Distance}
         case Distance 
         of 0 then 
             NewDamage = State.damage +2 
@@ -761,13 +765,26 @@ in
     @post
         return a random position that is bounded by minDistanceMine and maxDistanceMine around Position*/
     fun{PositionMine Position}
-        Pos XMine YMine in 
-        XMine = Position.x + Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
-        YMine = Position.y + Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        Pos XMine YMine DeltaX DeltaY CondX CondY in 
+        %Delta 
+        DeltaX = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        %Cond to know position or negative
+        if ({OS.rand} mod 2) == 1 then CondX = ~1
+        else
+            CondX=1
+        end
+        if ({OS.rand} mod 2) == 1 then CondY = ~1
+        else
+            CondY=1
+        end
+
+        XMine = Position.x + CondX * DeltaX
+        YMine = Position.y + CondY * DeltaY
         Pos = pt(x:XMine y:YMine)
-        if {IsOnMap Pos.x Pos.y} then {PositionMine Position}
+        if {IsOnMap Pos.x Pos.y} then Pos
         else 
-            Position 
+            {PositionMine Position}
         end
 
     end
@@ -775,13 +792,26 @@ in
     /**PositionMissile
         give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position*/
     fun{PositionMissile Position}
-        Pos XMissile YMissile in 
-        XMissile = Position.x + Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
-        YMissile = Position.y + Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
+        %Delta 
+        DeltaX = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        %Cond to know position or negative
+        if ({OS.rand} mod 2) == 1 then CondX = ~1
+        else
+            CondX=1
+        end
+        if ({OS.rand} mod 2) == 1 then CondY = ~1
+        else
+            CondY=1
+        end
+
+        XMissile = Position.x + CondX * DeltaX
+        YMissile = Position.y + CondY * DeltaY
         Pos = pt(x:XMissile y:YMissile)
-        if {IsOnMap Pos.x Pos.y} then {PositionMissile Position}
+        if {IsOnMap Pos.x Pos.y} then Pos
         else 
-            Position 
+            {PositionMissile Position}
         end
 
     end

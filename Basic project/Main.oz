@@ -153,6 +153,8 @@ define
         return the newState of the Game
     */
     fun{WhichFireItem KindFire ID PlayerState GameState}
+        {System.show 'Debut WhichFireItem avec un '}
+        {System.show KindFire}
         case KindFire
         of nil then GameState
         [] missile(Position) then {Missile Position ID GameState}
@@ -174,15 +176,19 @@ define
         return the new current gameState()
     */
     fun{Missile Position ID GameState}
-        fun{RecursiveMissile PlayersState GameState}
+        fun{RecursiveMissile ID PlayersState GameState Position}
             case PlayersState 
             of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
+                {System.show 'inside case Missile'}
                 if(A == false) then
                     /** The player is already dead */
-                    {RecursiveMissile T GameState}
+                    {RecursiveMissile ID T GameState Position}
                 else
                     Message 
                     in
+                    {System.show 'inside sayMissileExplode'}
+                    {System.show ID}
+                    {System.show Position}
                     {Send P sayMissileExplode(ID Position Message)}
                     {Wait Message}
                     {System.show 'A missile has been launched and the message is '}
@@ -199,16 +205,16 @@ define
                         NewPlayersState = {Change PlayersState ID_Dead_Submarine NewPlayerState}  
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
                         
-                        {RecursiveMissile T NewGameState}
+                        {RecursiveMissile ID T NewGameState Position}
                         
                     [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
                         {Broadcast PLAYER_PORTS sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft)}
                         {Send GUIPORT lifeUpdate(ID_Damaged_Submarine LifeLeft)}
 
-                        {RecursiveMissile T GameState}
+                        {RecursiveMissile ID T GameState Position}
                     else
                         {System.show 'Format of Message is not death or damage'}
-                        {RecursiveMissile T GameState}
+                        {RecursiveMissile ID T GameState Position}
                     end
                 end
             else
@@ -216,7 +222,8 @@ define
             end
         end
     in
-        {RecursiveMissile GameState.playersState GameState}
+        {System.show 'Début Missile'}
+        {RecursiveMissile ID GameState.playersState GameState Position}
     end
 
     
@@ -446,7 +453,7 @@ define
             %2
             {System.show '%2.'}
             elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
-                NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine
+                NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
                 in
                 {Send CurrentPlayer.port dive}
                 NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
@@ -458,8 +465,8 @@ define
                 if(Direction == surface) then
                     %4. the player want to go at surface 
                     {System.show '%4.'}
-                    NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#1]}
-                    NewPlayersState = {Change GameState.playersState Index NewPlayerState }
+                    NewPlayerStateSurface = {AdjoinList CurrentPlayer [turnAtSurface#1]}
+                    NewPlayersState = {Change GameState.playersState Index NewPlayerStateSurface }
                     NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
                     {Broadcast PLAYER_PORTS saySurface(ID)}
                     {Send GUIPORT surface(ID)}
@@ -484,6 +491,8 @@ define
                     in
                         {Send NewPlayerState.port fireItem(ID KindFire)}
                         {Wait ID} {Wait KindFire}
+                        {System.show 'KindFire is '}
+                        {System.show KindFire}
 
                         GameStateFire = {WhichFireItem KindFire ID NewPlayerState GameState}
                     end
