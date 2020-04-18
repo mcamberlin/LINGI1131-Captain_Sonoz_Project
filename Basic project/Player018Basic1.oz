@@ -341,10 +341,13 @@ in
         */
         NewState NewWeapon in
         if State.weapons.mine > 0 then
+            NewMines Position in
+            Position = {PositionMine State.position}
+            NewMines = Position|State.mines
             NewWeapon = {AdjoinList State.weapons [mine#State.weapons.mine-1]}
-            NewState = {AdjoinList State [weapons#NewWeapon]}
+            NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
-            KindFire = mine({PositionMine NewState.position}) 
+            KindFire = mine(Position) 
 
         elseif State.weapons.missile > 0 then
             NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}

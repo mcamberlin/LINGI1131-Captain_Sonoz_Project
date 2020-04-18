@@ -398,7 +398,7 @@ define
 
                         {RecursiveExplodeMine T GameState}
                     else
-                        {System.show 'Format of Message not understood in ExplodeMine'}
+                        {System.show 'Format of Message not sayDamage or sayDeath in ExplodeMine'}
                         {RecursiveExplodeMine T GameState}
                     end
                 end
