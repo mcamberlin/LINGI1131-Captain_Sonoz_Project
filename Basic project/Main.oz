@@ -199,11 +199,14 @@ define
                         NewGameState NewPlayersState NewPlayerState
                         in
                         {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
-                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
                         
-                        NewPlayerState = {AdjoinList {Get NewGameState.playersState ID_Dead_Submarine} [alive#false]} %set to false the "alive" of the player dead
-                        NewPlayersState = {Change PlayersState ID_Dead_Submarine NewPlayerState}  
-                        NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
+                        NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
+                        NewPlayersState = {Change PlayersState ID_Dead_Submarine.id NewPlayerState}  
+                        NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive 
+
+                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
+                        {System.show 'this player is removed of the party :'}
+                        {System.show ID.id}  
                         
                         {RecursiveMissile ID T NewGameState Position}
                         
@@ -383,8 +386,8 @@ define
                         {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
                         {Send GUIPORT removePlayer(ID_Dead_Submarine)}
                         
-                        NewPlayerState = {AdjoinList {Get NewGameState.playersState ID_Dead_Submarine} [alive#false]} %set to false the "alive" of the player dead
-                        NewPlayersState = {Change PlayersState ID_Dead_Submarine NewPlayerState}  
+                        NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
+                        NewPlayersState = {Change PlayersState ID_Dead_Submarine.id NewPlayerState}  
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
                         
                         {RecursiveExplodeMine T NewGameState}
@@ -503,7 +506,6 @@ define
                         {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
                         {Wait ID} {Wait Mine}
                         GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
-                        {Send GUIPORT removeMine(ID.id Mine)}
                     end
 
                     NewGameState = GameStateMine
