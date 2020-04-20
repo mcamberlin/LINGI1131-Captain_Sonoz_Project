@@ -412,10 +412,13 @@ define
                 GameState
             end
         end
+        GameStateMine
     in
         if Mine == null then GameState
         else
-            {RecursiveExplodeMine GameState.playersState GameState}
+            GameStateMine = {RecursiveExplodeMine GameState.playersState GameState}
+            {Send GUIPORT removeMine(ID Mine)}
+            GameStateMine
         end
     end
 
