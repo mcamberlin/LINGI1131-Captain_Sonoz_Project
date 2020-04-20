@@ -543,12 +543,12 @@ define
             proc{DisplayWinner PlayersState}
                 case PlayersState
                 of H|T then 
-                    if(H == nil) then {DisplayWinner T}
+                    if H.alive then {System.show 'The winner is the player number : ' #LastPlayer.id.id# ' '}
                     else
-                        {System.show 'The winner is the player number : ' #LastPlayer.id.id# ' '}
+                        {DisplayWinner T}
                     end
                 else
-                    skip
+                    {Sytem.show 'We cannot find the winner :('}
                 end
             end
             
