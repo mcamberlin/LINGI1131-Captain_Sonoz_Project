@@ -149,8 +149,8 @@ in
         NewState
     in
         NewDirection = {RandomDirection}
-        {System.show 'la direction choisie pour Move est : '}
-        {System.show NewDirection}
+        {System.show 'la direction choisie pour Move est : ' #NewDirection}
+        
         case NewDirection 
         of surface then 
             NewPosition = {Last State.lastPositions}
@@ -164,13 +164,10 @@ in
             NewPosition = pt(x:State.position.x y:(State.position.y-1))
         end 
 
-        {System.show 'la nouvelle position est : '}
-        {System.show NewPosition}
+        {System.show 'la nouvelle position est : '#NewPosition}
 
         if(NewDirection == surface) then
             NewState = {AdjoinList State [surface#true lastPositions#nil ]} % reset the last positions visited since last surface phase
-            {System.show 'Fin de la fonction Move. Le nouvel état du jouer (State) est :'}
-            {System.show NewState}
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
@@ -191,9 +188,6 @@ in
         else
 
             NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
-            
-            {System.show 'Fin de la fonction Move. Le nouvel état du jouer (State) est :'}
-            {System.show NewState}
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
@@ -242,8 +236,8 @@ in
         NewState NewLoad NewWeapons NewLoads NewItem
     in
         NewItem = {RandomItem}
-        {System.show 'L item choisi dans chargeItem est : '}
-        {System.show NewItem}
+        {System.show 'L item choisi dans chargeItem est : '#NewItem}
+
         case NewItem
         of missile then
             %Increase the loads of missile
@@ -382,8 +376,7 @@ in
         end
 
         
-        {System.show 'the weapon fired is '}
-        {System.show KindFire}
+        {System.show 'the weapon fired is '#KindFire}
         NewState
         
     end
@@ -436,8 +429,7 @@ in
         Announce to the others that the player with id ID has changed direction to Direction
     */
     fun{SayMove ID Direction State}
-        {System.show 'Le joueur a changé de direction vers'}
-        {System.show Direction}
+        {System.show 'Le joueur a changé de direction vers'#Direction}
         State
     end
 
@@ -478,8 +470,7 @@ in
     /** SayMinePlaced 
     */
     fun{SayMinePlaced ID State}
-        {System.show 'A mine has been placed by the player :'}
-        {System.show ID.id}
+        {System.show 'A mine has been placed by the player : '#ID.id}
         
         State
     end
@@ -502,11 +493,8 @@ in
     fun{SayMissileExplode ID Position Message State}
         Distance NewState NewDamage
     in
-        {System.show 'inside sayMissileExplode. ManhattanDistance :'}
         
         Distance = {ManhattanDistance Position State.position}
-        
-        {System.show Distance}
         case Distance 
         of 0 then 
             NewDamage = State.damage +2 
@@ -599,7 +587,6 @@ in
             Answer = nil
             State
         else
-
             case Drone
             of drone(row X) then
                 if(State.position.x == X) then
@@ -634,14 +621,15 @@ in
         case Drone
         of drone(row X) then
             if Answer then 
-                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in row '} X}}
+                {System.show 'The player ' #State.id.id# ' detected an ennemy in row '#X}
             else
-                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' did not detect an ennemy in row '} X}}
+                {System.show 'The player' # State.id.id# ' did not detect an ennemy in row '# X}
             end
         [] drone(column Y) then 
-            if Answer then {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' detected an ennemy in column '} Y}}
+            if Answer then 
+                {System.show 'The player ' # State.id.id # 'detected an ennemy in column '# Y}
             else
-                {System.show {OS.Append {OS.Append {OS.Append 'The player ' State.id.id} ' did not detect an ennemy in column '} Y}}
+                {System.show 'The player ' # State.id.id # ' did not detect an ennemy in column '# Y}
             end
         else
             {System.show 'Bad initialisation of Drone.'}
@@ -687,8 +675,7 @@ in
     /** SayAnswerSonar 
     */
     fun{SayAnswerSonar ID Answer State}
-        {System.show 'The player s sonar detect an ennemy around the position '}
-        {System.show Answer}
+        {System.show 'The player s sonar detect an ennemy around the position ' #Answer}
         State
     end
 
@@ -700,19 +687,15 @@ in
         Display an informative message of the death of the player id
     */
     fun{SayDeath ID State}
-        {System.show 'This player is dead :'}
-        {System.show ID.id}
+        {System.show 'This player is dead :'#ID.id}
         State
     end
 
     /** SayDamageTaken 
     */
     fun {SayDamageTaken ID Damage LifeLeft State}
-        {System.show 'The player take a total damage of '}
-        {System.show Damage}
-        {System.show 'His health point is '}
-        {System.show LifeLeft}
-        
+        {System.show 'The player take a total damage of '#Damage}
+        {System.show 'His health point is '#LifeLeft}
         State        
     end
 

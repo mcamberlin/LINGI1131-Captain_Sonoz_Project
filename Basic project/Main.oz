@@ -81,6 +81,7 @@ define
             end
         end
     in
+        {System.show ' ---------- '}
         {System.show 'GameState : '}
         {System.show 'nbPlayersAlive =  '#GameState.nbPlayersAlive}
         {PrintPlayer GameState.playersState} 
@@ -189,8 +190,7 @@ define
         return the newState of the Game
     */
     fun{WhichFireItem KindFire ID PlayerState GameState}
-        {System.show 'Debut WhichFireItem avec un '}
-        {System.show KindFire}
+        {System.show 'Debut WhichFireItem avec un ' #KindFire}
         case KindFire
         of nil then GameState
         [] missile(Position) then {Missile Position ID GameState}
@@ -215,20 +215,15 @@ define
         fun{RecursiveMissile ID PlayersState GameState Position}
             case PlayersState 
             of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
-                {System.show 'inside case Missile'}
                 if(A == false) then
                     /** The player is already dead */
                     {RecursiveMissile ID T GameState Position}
                 else
                     Message 
                     in
-                    {System.show 'inside sayMissileExplode'}
-                    {System.show ID}
-                    {System.show Position}
                     {Send P sayMissileExplode(ID Position Message)}
                     {Wait Message}
-                    {System.show 'A missile has been launched and the message is '}
-                    {System.show Message}
+                    {System.show 'A missile has been launched and the message is '#Message}
 
                     case Message
                     of sayDeath(ID_Dead_Submarine) then 
@@ -237,15 +232,11 @@ define
                         {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
                         
                         NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
-                        {System.show 'PlayersState avant Change : ' #GameState.playersState}
-                        {System.show 'ID_Dead_Submarine.id avant Change : ' #ID_Dead_Submarine.id}
                         NewPlayersState = {Change GameState.playersState ID_Dead_Submarine.id NewPlayerState} 
-                        {System.show 'NewPlayersState apres Change : ' #NewPlayersState} 
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive 
 
                         {Send GUIPORT removePlayer(ID_Dead_Submarine)}
-                        {System.show 'this player is removed of the party :'}
-                        {System.show ID.id}  
+                        {System.show 'this player is removed of the party :'#ID.id}
                         
                         {RecursiveMissile ID T NewGameState Position}
                         
@@ -255,7 +246,7 @@ define
 
                         {RecursiveMissile ID T GameState Position}
                     else
-                        {System.show 'Format of Message is not death or damage'}
+                        {System.show 'Format of Message in Missile is not death or damage. The player is not touched'}
                         {RecursiveMissile ID T GameState Position}
                     end
                 end
@@ -264,7 +255,6 @@ define
             end
         end
     in
-        {System.show 'Début Missile'}
         {RecursiveMissile ID GameState.playersState GameState Position}
     end
 
@@ -294,8 +284,7 @@ define
         end
     in
         {Send GUIPORT putMine(ID Position)}
-        {System.show 'A mine has been place in the position'}
-        {System.show Position}
+        {System.show 'A mine has been place in the position' #Position}
         {RecursiveMine Position ID GameState.playersState GameState}
     end
 
@@ -333,7 +322,7 @@ define
                             {Send PlayerState.port sayAnswerSonar(ID Answer)}      
                             {RecursiveSonar T PlayerState GameState}                  
                     else
-                        {System.show 'Message not understood (not a sonar)'}
+                        {System.show 'Format of Message in Sonar not understood (not a sonar)'}
                         {RecursiveSonar T PlayerState GameState}
                     end
                 end
@@ -370,22 +359,6 @@ define
                     {Wait ID} {Wait Answer}
                     {Send PlayerState.port sayAnswerDrone(ID Answer)}      
                     {RecursiveDrone KindFire T PlayerState GameState}  
-                    /* 
-                    Pas nécessaire car sayAnswerDrone dit deja si touché ou pas 
-                    case Answer 
-                    of true then
-                        %Send a message to the emitter of the drone the position returned by the other players
-                        {Send PlayerState.port sayAnswerDrone(ID Answer)}      
-                        {RecursiveDrone KindFire T PlayerState GameState}   
-
-                    [] false then
-                        %Send a message to the emitter of the drone the position returned by the other players
-                        {Send PlayerState.port sayAnswerDrone(ID Answer)}      
-                        {RecursiveDrone KindFire T PlayerState GameState}   
-                    else
-                        {RecursiveDrone KindFire T PlayerState GameState}
-                    end
-                    */
                 end
             else
                 GameState
@@ -412,11 +385,10 @@ define
                 else
                     Message in 
                     {Send P sayMineExplode(ID Mine Message)}
-                    {System.show 'The Message in ExplodeMine is :'}
                     
                     {Wait Message}
                     
-                    {System.show Message}
+                    {System.show 'The Message in ExplodeMine is :'#Message}
 
                     case Message 
                     of sayDeath(ID_Dead_Submarine) then 
@@ -426,10 +398,7 @@ define
                         {Send GUIPORT removePlayer(ID_Dead_Submarine)}
                         
                         NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
-                        {System.show 'PlayersState avant Change : ' #GameState.playersState}
-                        {System.show 'ID_Dead_Submarine.id avant Change : ' #ID_Dead_Submarine.id}
                         NewPlayersState = {Change GameState.playersState ID_Dead_Submarine.id NewPlayerState} 
-                        {System.show 'NewPlayersState apres Change : ' #NewPlayersState}
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
 
                         {RecursiveExplodeMine T NewGameState}
@@ -440,7 +409,7 @@ define
 
                         {RecursiveExplodeMine T GameState}
                     else
-                        {System.show 'Format of Message not sayDamage or sayDeath in ExplodeMine'}
+                        {System.show 'Format of Message not sayDamage or sayDeath in ExplodeMine. The player '#ID.id#' is not touched'}
                         {RecursiveExplodeMine T GameState}
                     end
                 end
@@ -480,13 +449,14 @@ define
             CurrentPlayer = {Get GameState.playersState Index}
 
 
-            {System.show 'Au tour' #I# 'pour le joueur : '#Index# ' '}
+            {System.show 'Au tour' #I# 'pour le joueur : '#Index}
             {System.show 'Etat du jeu : ' #GameState}
-            {System.show '     Etat du joueur actuel : ' #CurrentPlayer# ' '}
+            {System.show '     Etat du joueur actuel : ' #CurrentPlayer}
 
             %0. Si le joueur est deja mort
             if(CurrentPlayer.alive == false) then
                 {System.show 'Le joueur : '#Index# ' est deja mort.'}
+                {System.show '-------------------Fin du tour pour le joueur '#Index}
                 {InLoopTurnByTurn GameState I+1}          
             
             %1                   
@@ -496,8 +466,7 @@ define
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
                 NewPlayersState = {Change GameState.playersState Index NewPlayerState }
                 NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
-                {System.show 'Fin du tour pour le joueur'}
-                {System.show Index}
+                {System.show '-------------------Fin du tour pour le joueur '#Index}
                 {InLoopTurnByTurn NewGameState I+1}
 
             %2
@@ -512,6 +481,7 @@ define
                 {System.show '%3.'}
                 {Send NewPlayerState.port move(ID Position Direction)}
                 {Wait ID} {Wait Position} {Wait Direction}
+                {System.show 'The State of the player is '#ID}
                 if(Direction == surface) then
                     %4. the player want to go at surface 
                     {System.show '%4.'}
@@ -520,8 +490,7 @@ define
                     NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
                     {Broadcast PLAYER_PORTS saySurface(ID)}
                     {Send GUIPORT surface(ID)}
-                    {System.show 'Fin du tour pour le joueur'}
-                    {System.show Index}
+                    {System.show '-------------------Fin du tour pour le joueur '#Index}
                     {InLoopTurnByTurn NewGameState I+1}
                 else
                     %5. the player want to move to a direction
@@ -541,8 +510,7 @@ define
                     in
                         {Send NewPlayerState.port fireItem(ID KindFire)}
                         {Wait ID} {Wait KindFire}
-                        {System.show 'KindFire is '}
-                        {System.show KindFire}
+                        {System.show 'KindFire is '#KindFire}
 
                         GameStateFire = {WhichFireItem KindFire ID NewPlayerState GameState}
                     end
@@ -559,7 +527,6 @@ define
                     NewGameState = GameStateMine
 
                     {System.show 'Fin du tour pour le joueur' #Index}
-                    {System.show 'l etat du jeu a la fin du tour : ' #NewGameState}
                     {InLoopTurnByTurn NewGameState I+1}
                     
 
@@ -605,5 +572,5 @@ in
         {Simultaneous}
     end
 
-    {System.show '----------------------------------------------------- GAME ENDED ------------------------------------------------'}
+    {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
 end
