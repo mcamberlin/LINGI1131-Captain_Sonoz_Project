@@ -66,7 +66,43 @@ define
         end
     end
 
+    proc{Print GameState}
+        proc{PrintPlayer PlayersState}
+            case PlayersState 
+            of H|T then 
+                {System.show 'Port = ' #H.port}
+                {System.show 'Alive = ' #H.alive}
+                {System.show 'IsAtSurface = ' #H.isAtSurface}
+                {System.show 'TurnAtSurface = ' #H.turnAtSurface}
+                {PrintPlayer T}
+            else 
+                {System.show ' ---------- '}
+                skip
+            end
+        end
+    in
+        {System.show 'GameState : '}
+        {System.show 'nbPlayersAlive =  '#GameState.nbPlayersAlive}
+        {PrintPlayer GameState.playersState} 
+    end
     
+    proc{DisplayWinner PlayersState}
+        case PlayersState
+        of H|T then 
+            if H.alive then
+                ID Position Direction in 
+                {Send H.port move(ID Position Direction)}
+                {Wait ID}{Wait Position}{Wait Direction}
+                {System.show 'The winner is the player number : ' #ID }
+            else
+                {DisplayWinner T}
+            end
+        else
+            {System.show 'We cannot find the winner :('}
+        end
+    end
+
+
     /** CreateEachPlayer
     @pre 
         NbPlayer = number of players during the game
@@ -431,7 +467,7 @@ define
     */
     proc{InLoopTurnByTurn GameState I}
         
-        {System.show 'Le nombre de joueurs en vie est de : ' #GameState.nbPlayersAlive# ' '}
+        {Print GameState}
         
         if(GameState.nbPlayersAlive >1) then
 
@@ -465,10 +501,10 @@ define
                 {InLoopTurnByTurn NewGameState I+1}
 
             %2
-            {System.show '%2.'}
             elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
                 NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
                 in
+                {System.show '%2.'}
                 {Send CurrentPlayer.port dive}
                 NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
 
@@ -533,28 +569,15 @@ define
                 skip
             end
         else
-            LastPlayer DisplayWinner in 
             /** DisplayWinner
             @pre 
                 PlayersState = liste de playerState
             @post
                 Affiche un message pour indiquer le gagnant de la partie
             */
-            proc{DisplayWinner PlayersState}
-                case PlayersState
-                of H|T then 
-                    if H.alive then {System.show 'The winner is the player number : ' #LastPlayer.id.id# ' '}
-                    else
-                        {DisplayWinner T}
-                    end
-                else
-                    {Sytem.show 'We cannot find the winner :('}
-                end
-            end
             
             {DisplayWinner GameState.playersState}
             {System.show 'EndGame'} 
-
         end
     end
     
