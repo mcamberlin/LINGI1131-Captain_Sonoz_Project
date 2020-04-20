@@ -422,11 +422,9 @@ define
     */
     proc{InLoopTurnByTurn GameState I}
         
+        {System.show 'Le nombre de joueurs en vie est de : ' #GameState.nbPlayersAlive# ' '}
         
         if(GameState.nbPlayersAlive >1) then
-
-            {System.show 'C est parti pour le tour'}
-            {System.show I}
 
             Index TestIndex CurrentPlayer in 
             TestIndex = I mod (Input.nbPlayer)
@@ -436,13 +434,18 @@ define
             end
             CurrentPlayer = {Get GameState.playersState Index}
 
-            {System.show 'pour le joueur'}
-            {System.show Index}
 
+            {System.show 'Au tour' #I# 'pour le joueur : '#Index# ' '}
+            {System.show 'Etat du jeu : ' #GameState}
+            {System.show '     Etat du joueur actuel : ' #CurrentPlayer# ' '}
+
+            %0. Si le joueur est deja mort
+            if(CurrentPlayer.alive == false) then
+                {System.show 'Le joueur : '#Index# ' est deja mort.'}
+                {InLoopTurnByTurn GameState I+1}          
             
-
             %1                   
-            if (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
+            elseif (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
             %NOTE : pas sur que ca fonctionnne A DISCUTER car CurrentPlayer.turnAtSurface ne sera jamais a 0 :/
                 NewPlayerState NewPlayersState NewGameState in
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
@@ -521,7 +524,28 @@ define
                 skip
             end
         else
-            {System.show 'EndGame'} %Il faudra faire une fonction qui cherche le dernier vivant
+            LastPlayer DisplayWinner in 
+            /** DisplayWinner
+            @pre 
+                PlayersState = liste de playerState
+            @post
+                Affiche un message pour indiquer le gagnant de la partie
+            */
+            proc{DisplayWinner PlayersState}
+                case PlayersState
+                of H|T then 
+                    if(H == nil) then {DisplayWinner T}
+                    else
+                        {System.show 'The winner is the player number : ' #LastPlayer.id.id# ' '}
+                    end
+                else
+                    skip
+                end
+            end
+            
+            {DisplayWinner GameState.playersState}
+            {System.show 'EndGame'} 
+
         end
     end
     
@@ -531,26 +555,23 @@ define
     proc{TurnByTurn}
         InitialState in
         InitialState = {StartGame}
-        {System.show 'Start turnByTurn'}
         {InLoopTurnByTurn InitialState 1}
     end
 
 in
-    {System.show 'Start'}
+    {System.show '----------------------------------------------------- GAME LAUNCHED ------------------------------------------------'}
 
-    %%%% 1 - Create the port for the GUI and launch its interface %%%%
     GUIPORT = {GUI.portWindow} %Create the port for the GUI
     {Send GUIPORT buildWindow} %Launch its interface
 
-    %%%% 2-3 - Initialize players (assign id, color, initial position) %%%%
-    PLAYER_PORTS = {CreateEachPlayer Input.nbPlayer Input.players Input.colors 1}
+    PLAYER_PORTS = {CreateEachPlayer Input.nbPlayer Input.players Input.colors 1} %Initialize players (assign id, color, initial position) 
 
-    %%%% 4 - Launch the game in the correct mode %%%%
+    %Launch the game in the correct mode
     if(Input.isTurnByTurn) then
         {TurnByTurn}
     else
         {Simultaneous}
     end
 
-    {System.show 'Stop'}
+    {System.show '----------------------------------------------------- GAME ENDED ------------------------------------------------'}
 end

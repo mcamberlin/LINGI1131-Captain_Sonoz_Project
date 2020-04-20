@@ -408,63 +408,17 @@ in
                 ID = State.id
                 NewState = {AdjoinList State [mines#T]}
                 NewState
-            else %The mine do not explode
+            else %Do not want to explode a mine
                 Mine = null
                 ID = State.id
                 State
             end
-        else %no more mine placed
+        else % None mine to place
             Mine = null
             ID = State.id
             State
         end
     end
-
-
-
-        /* 
-    fun{FireMine ID Mine State} %version Merlin
-        if(State.weapons.mine >0) then %They are mines ready to be fired 
-            Fire = {OS.rand} mod 2
-            % Choose between place a new mine or fired an existing one 
-            case Fire
-            of 0 then  %No mine exploded 
-                %NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine -1)]}
-                %NewMines = {AdjoinList State [mines# ({OS.Append State.mines {PositionMine State.position}})]}
-                %NewState = {AdjoinList State [weapons#NewWeapons mines#NewMines]}
-                ID = State.id
-                Mine = null
-                
-                State
-            else %Fired an existing mine 
-                if(State.mines == nil) then %No mine has been placed before 
-                    NewState = State
-                    ID = State.id
-                    Mine = null
-                    NewState
-                else % The mine at the first position in mines() explodes  
-                    NewMines = State.mines.2
-                    NewState = {AdjoinList State [mines#NewMines]}
-                    ID = State.id
-                    Mine = State.mines.1
-                    NewState
-                end
-            end
-        else % The load of mine is empty => Explode an existing one 
-            if(State.mines == nil) then %None mine has been placed before 
-                NewState = State
-                ID = State.id
-                Mine = null
-                NewState
-            else % The mine at the first position in mines() exposes  
-                NewMines = State.mines.2
-                NewState = {AdjoinList State [mines#NewMines]}
-                ID = State.id
-                Mine = State.mines.1
-                NewState
-            end
-        end 
-    end*/   
 
     /** IsDead
     the player is dead if his damage is greater than Input.maxDamage
@@ -786,7 +740,8 @@ in
         XMine = Position.x + CondX * DeltaX
         YMine = Position.y + CondY * DeltaY
         Pos = pt(x:XMine y:YMine)
-        if {IsOnMap Pos.x Pos.y} then Pos
+        if {IsOnMap Pos.x Pos.y} andthen {Not {IsIsland Pos.x Pos.y Input.map} } then 
+            Pos
         else 
             {PositionMine Position}
         end
