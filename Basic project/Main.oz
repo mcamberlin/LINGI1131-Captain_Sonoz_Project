@@ -201,7 +201,10 @@ define
                         {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
                         
                         NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
-                        NewPlayersState = {Change PlayersState ID_Dead_Submarine.id NewPlayerState}  
+                        {System.show 'PlayersState avant Change : ' #GameState.playersState}
+                        {System.show 'ID_Dead_Submarine.id avant Change : ' #ID_Dead_Submarine.id}
+                        NewPlayersState = {Change GameState.playersState ID_Dead_Submarine.id NewPlayerState} 
+                        {System.show 'NewPlayersState apres Change : ' #NewPlayersState} 
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive 
 
                         {Send GUIPORT removePlayer(ID_Dead_Submarine)}
@@ -387,9 +390,12 @@ define
                         {Send GUIPORT removePlayer(ID_Dead_Submarine)}
                         
                         NewPlayerState = {AdjoinList {Get GameState.playersState ID_Dead_Submarine.id} [alive#false]} %set to false the "alive" of the player dead
-                        NewPlayersState = {Change PlayersState ID_Dead_Submarine.id NewPlayerState}  
+                        {System.show 'PlayersState avant Change : ' #GameState.playersState}
+                        {System.show 'ID_Dead_Submarine.id avant Change : ' #ID_Dead_Submarine.id}
+                        NewPlayersState = {Change GameState.playersState ID_Dead_Submarine.id NewPlayerState} 
+                        {System.show 'NewPlayersState apres Change : ' #NewPlayersState}
                         NewGameState = {AdjoinList GameState [playersState#NewPlayersState nbPlayersAlive#(GameState.nbPlayersAlive -1)]} %update the number of players alive   
-                        
+
                         {RecursiveExplodeMine T NewGameState}
 
                     [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
@@ -513,8 +519,8 @@ define
 
                     NewGameState = GameStateMine
 
-                    {System.show 'Fin du tour pour le joueur'}
-                    {System.show Index}
+                    {System.show 'Fin du tour pour le joueur' #Index}
+                    {System.show 'l etat du jeu a la fin du tour : ' #NewGameState}
                     {InLoopTurnByTurn NewGameState I+1}
                     
 
