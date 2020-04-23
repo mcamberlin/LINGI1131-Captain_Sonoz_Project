@@ -101,7 +101,7 @@ in
         State = current state of the submarine
         Select a random position and bind ID, Position to new Position and Direction to new Direction
 
-        Arthur : garder en mémoire la derniere position de chaque joueur et se deplacer vers le plus proche 
+        Arthur : garder en mémoire une estimation de la position des joueurs et aller vers cette position
     */ 
     fun{Move ID Position Direction State}
 
@@ -282,8 +282,6 @@ in
     
     /** Dive 
         State = current state of the submarine
-
-        Arthur : rien a changer 
     */
     fun{Dive State}
         {AdjoinList State [dive#true]}
@@ -300,9 +298,7 @@ in
             the id is bound
             the item has nil value
             increase the load by one one the item selected (mine, missile, drone or sonar)
-        return the new state of the submarine
-
-        Arthur : rien a changer 
+        return the new state of the submarine 
     */
     fun{ChargeItem ID KindItem State}
         /** RandomItem
@@ -508,8 +504,6 @@ in
 
     /** IsDead
     the player is dead if his damage is greater than Input.maxDamage
-
-    Arthur : rien a chnager 
     */
     fun{IsDead Answer State}
         Answer = State.damage >= Input.maxDamage
