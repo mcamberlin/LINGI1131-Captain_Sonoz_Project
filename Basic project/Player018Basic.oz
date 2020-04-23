@@ -235,6 +235,7 @@ in
         end
         NewState NewLoad NewWeapons NewLoads NewItem
     in
+        {System.show 'l etat du joueur est : ' #State}
         NewItem = {RandomItem}
         {System.show 'L item choisi dans chargeItem est : '#NewItem}
 
