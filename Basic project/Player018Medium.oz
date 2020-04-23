@@ -889,6 +889,7 @@ in
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
                             mines: nil
+                            ennemi: ennemi(id:0 position:pt(x:0 y:0))
                             )
         thread
             {TreatStream Stream InitialState}
