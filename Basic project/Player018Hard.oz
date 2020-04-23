@@ -1,7 +1,23 @@
+/** State
+state( id(id<idNum> color:<color> name:Name) 
+                position:<position> 
+                lastPositions:nil | <position>
+                direction:<direction> 
+                surface: <true>|<false>
+                dive: <true>|<false>
+                loads: loads(mine:x missile:y drone:z sonar: u) 
+                weapons: weapons(mine:x missile:y drone:z sonar:u))
+                enemy: enemy(id:i position:P)
+                enemies: enemies(id:i lastKnownPosition:P)  | nil
+
+
+Second level of player
+*/
+%http://mozart2.org/mozart-v1/doc-1.4.0/tutorial/node3.html
 functor
 import
     Input
-    %QTk at 'x-oz://system/wp/QTk.ozf'
+    QTk at 'x-oz://system/wp/QTk.ozf'
     System
     OS 
 export
@@ -28,8 +44,6 @@ define
     SayDeath
     SayDamageTaken
 
-    Get
-    Change
     ManhattanDistance
     PositionMine 
     PositionMissile
@@ -40,10 +54,13 @@ define
 
     StartPlayer
     TreatStream
-
+    Get
+    Change
 in
 
-    /** Get
+    /** Useful functions ----------------------------------------------------------------------*/
+
+    /**
     @pre
         L = list of elements
         I = index of the element considering in the list
@@ -63,7 +80,7 @@ in
         end
     end
 
-    /** Change
+    /**
     @pre 
         L = list
         I = index
@@ -83,17 +100,35 @@ in
             nil
         end
     end
-    
+    /** End useful functions ----------------------------------------------------------------------*/
+
 
     /** InitPosition
         ID = unbound; Position= unbound
         State = current state of the submarine
         bind ID and position to a random position on the map
+
+        Arthur : Rien a changer 
     */
     fun{InitPosition ID Position State}
-        ID = State.id
-        Position = {RandomPosition} 
-        {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
+        local
+            /*Ouvre une fenetre pour demander la position initiale */
+            fun{AskPosition}
+                Position X Y in
+                Position = {QTk.dialogbox load(defaultextension:"qdw" 
+                                    initialdir:"." 
+                                title:"Choose a initiale position : " 
+                                initialfile:"" 
+                                filetypes:q("Position" q("X" X) q("Y" Y) ) ) }  %normalement ouvre une fenetre mais pas sur
+                if Position.X > Input.nRow then skip end 
+                if Position.Y > Input.nColumn then skip end 
+                Position
+            end
+        in
+            ID = State.id
+            Position = {RandomPosition} %{AskPosition}
+            {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
+        end
     end
 
     /** Move
@@ -104,6 +139,7 @@ in
         Arthur : garder en mémoire la derniere position de chaque joueur et se deplacer vers le plus proche 
     */ 
     fun{Move ID Position Direction State}
+
 
         /** NotAlreadyVisited
         @pre
@@ -152,7 +188,7 @@ in
 
         /**
         @pre  
-            L = list of enemies
+            L = liste of ennemies
         @post
             return the direction to of the nearest enemy
         */
@@ -163,37 +199,38 @@ in
             @post
                 return the ID to of the nearest enemy
             */
-            fun{NearestEnemy L ID MinX MinY State}
+            fun{NearestEnemy L ID MinDist State}
                 case L
-                of enemy(id:I position:P)|T then 
-                    DistX DistY in 
-
-                    DistX = {Abs P.x - State.position.x}
-                    DistY = {Abs P.y - State.position.y}
-
-                    %Both coordinates are known
-                    if(P.x \= 0 andthen P.y\= 0) then
-                        if(DistX < MinX) then 
-                            {NearestEnemy L I DistX MinY State}
-                        elseif(DistY<MinY) then
-                            {NearestEnemy L I MinX DistY State}
+                of H|T then 
+                    case H 
+                    of enemy(id:I position:P) then
+                        %One of the two position is knwon
+                        if ( (P.x == nil andthen P.y \= nil) orelse (P.x \= nil andthen P.y == nil) ) then
+                            DistX DistY in 
+                            if(P.x \= nil) then
+                                {Browse 'DistX' #DistX}
+                                DistX = {Abs P.x - State.position.x}
+                                if(MinDist > DistX) then
+                                    {NearestEnemy T I DistX State}
+                                else
+                                    {NearestEnemy T ID MinDist State}
+                                end
+                            else
+                                DistY = {Abs P.y - State.position.y}
+                                {Browse 'DistY' #DistY}
+                                if(MinDist > DistY) then
+                                    {Browse 'ici'}
+                                    {NearestEnemy T I DistY State}
+                                else
+                                    {NearestEnemy T ID MinDist State}
+                                end
+                            end
                         else
-                            {NearestEnemy T ID MinX MinY State}
+                            {SelectDirection T ID MinDist State}
                         end
-                    %x-coordinate is known
-                    elseif(P.x \= 0) then
-                        if(DistX < MinX ) then
-                            {NearestEnemy T I DistX MinY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %y-coordinate is known
                     else
-                        if(DistY < MinY) then
-                            {NearestEnemy T I MinX DistY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
+                        ~1
+                        {System.show 'Problem... This case should never occur'}
                     end
                 else
                     ID
@@ -202,27 +239,27 @@ in
             I %ID of the nearest ennemy
             Enemy
         in
-            I = {NearestEnemy State.ennemies 1 Input.nRow Input.nColumn State}
+            I = {NearestEnemy State.ennemies 1 {Max Input.nRow Input.nColumn} State}
             Enemy = {Get State.ennemies I}
             
-
-            if(Enemy.position.x > State.position.x) then south
-            elseif(Enemy.position.x < State.position.x) then north
-            elseif(Enemy.position.y > State.position.y) then east
-            elseif(Enemy.position.y < State.position.y) then west
-            elseif(Enemy.position.x ==  State.position.x) then
-                if(Enemy.position.y > State.position.y) then east
-                elseif(Enemy.position.y < State.position.y) then west
+            if(EnemyPosition.x \= nil) then
+                if(EnemyPosition.x > State.position.x) then south
+                elseif(EnemyPosition.x < State.position.x) then north
                 else
-                    surface
+                    if(EnemyPosition.y > State.position.y) then east
+                    else west
+                    end
+                end
+            elseif(EnemyPosition.y \= nil) then
+                if(EnemyPosition.y > State.position.y) then east
+                elseif(EnemyPosition.y < State.position.y) then west
+                else
+                    south
                 end
             else
-                if(Enemy.position.x > State.position.x) then south
-                elseif(Enemy.position.x < State.position.x) then north
-                else
-                    surface
-                end
+                surface
             end
+
         end
 
         NewDirection
@@ -254,7 +291,7 @@ in
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
-            NewState 
+            NewState %return
 
         elseif( {Not {IsPositionOnMap NewPosition} } ) then 
             {System.show 'The direction selected is outside the map'}
@@ -274,7 +311,7 @@ in
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
-            NewState
+            NewState %return
         end
         
     end 
@@ -725,15 +762,16 @@ in
         of drone(row X) then
             if Answer then 
                 % The submarine ID is located in row X
+                % => Update lastPositionKnown
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID}.position [x#X]}
+                NewPosition = position(x:X y:nil)
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
-                {System.show 'The player ' #State.id.id# ' has detected the submarine ' #ID# ' in row '#X# 'thanks to its drone'}
+                {System.show 'The player ' #State.id.id# ' detected the submarine ' #ID# ' in row '#X}
                 NewState
             else
-                {System.show 'The player' # State.id.id# ' does not detect an enemy in row '#X}
+                {System.show 'The player' # State.id.id# ' do not detect an enemy in row '# X}
                 State
             end
 
@@ -742,18 +780,18 @@ in
                 % The submarine ID is located in column Y
                 % => Update lastPositionKnown
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID}.position [y#Y]}
+                NewPosition = position(x:nil y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
-                {System.show 'The player ' #State.id.id# ' has detected the submarine ' #ID# ' in column '#Y# 'thanks to its drone'}
+                {System.show 'The player ' #State.id.id# ' detected the submarine ' #ID# ' in column '#Y}
                 NewState
             else
-                {System.show 'The player ' # State.id.id # ' does not detect an enemy in column '#Y}
+                {System.show 'The player ' # State.id.id # ' did not detect an enemy in column '# Y}
                 State
             end
         else
-            {System.show 'Bad answer of Drone.'}
+            {System.show 'Bad initialisation of Drone.'}
             State
         end
     end
@@ -794,69 +832,68 @@ in
     
 
     /** SayAnswerSonar 
-    @pre
-        ID = ID of the submarine that answers
-        Answer = pt(x:X y:Y) with only 1 coordinate correct
-    @post
-        Update the position known of their ennemies according to the answer given.
     */
     fun{SayAnswerSonar ID Answer State}
-        {System.show 'The player ' #State.id.id ' has detected an enemy around the position ' #Answer# 'thanks to its sonar'}
+         {System.show 'The player s sonar detect an enemy around the position ' #Answer}
         case Answer
         of pt(x:X y:Y) then
-            Enemy EnemyPosition in 
-            Enemy = {Get State.enemies ID}
-            EnemyPosition = Enemy.position
-            
-            % None coordinate was known before
-            if(EnemyPosition.x == 0 andthen EnemyPosition.y == 0) then
+            CurrentEnemy CurrentPosition in 
+            CurrentEnemy = {Get State.enemies ID}
+            CurrentPosition = CurrentEnemy.position
+            % First sonarAnwser
+            if(CurrentPosition.x == nil andthen CurrentPosition.y == nil) then
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
-                NewState
-            
-            % The submarine didn't move
-            elseif(EnemyPosition.x == X andthen EnemyPosition.y == Y) then  
-                State
-            
-            %The x-coordinate is the same as the previous known, therefore the y-coordinate is wrong.
-            elseif(EnemyPosition.x == X ) then
-                %Update the y-coordinate for this submarine
-                NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = position(x:X y:0)
-                NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
-                NewState = {AdjoinList State [enemies#NewEnemies]}
-                {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
-                NewState
 
-            %The y-coordinate is the same as the previous known, therefore the x-coordinate is wrong.
-            elseif(EnemyPosition.y == Y) then
-                %Update the x-coordinate for this submarine
-                NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = position(x:0 y:Y)
-                NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
-                NewState = {AdjoinList State [enemies#NewEnemies]}
-                {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
-                NewState            
-            
-            %Both coordinates have changed
-            else     
-                %Update the coordinates for this submarine  
-                NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = position(x:X y:Y)
-                NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
-                NewState = {AdjoinList State [enemies#NewEnemies]}
-                {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
-                NewState                 
-            end   
+
+
+
+
+
+            % A position was already known for this submarine
+            if(CurrentPosition.x \= nil andthen CurrentPosition.y \= nil) then
+                if(CurrentPosition.x == X andthen CurrentPosition.y == Y) then  %the submarine didn't move
+                    State
+                else
+                    %Check which coordonate anwsered is correct
+                    if(CurrentPosition.x == X ) then
+                        %The x coordonate is the same as the previous known, therefore the correct coordonate answered is the y one.
+                        %Update the y coordonate for this submarine
+                        NewPosition NewEnemy NewEnemies NewState in
+                        NewPosition = position(x:X y:Y)
+                        NewEnemy = enemy(id:ID position:NewPosition)
+                        NewEnemies = {Change State.enemies ID NewEnemy}
+                        NewState = {AdjoinList State [enemies#NewEnemies]}
+                        {System.show 'The player ' #State.id.id# ' think that the submarine ' #ID# ' is located at position '#NewPosition}
+                        NewState
+                    elseif(CurrentPosition.y == Y) then
+                        %The x coordonate is the same as the previous known, therefore the correct coordonate answered is the y one.
+                        %Update the y coordonate for this submarine
+                        % The submarine ID is located in row X
+                        % => Update lastPositionKnown
+                        NewPosition NewEnemy NewEnemies NewState in
+                        NewPosition = position(x:X y:Y)
+                        NewEnemy = enemy(id:ID position:NewPosition)
+                        NewEnemies = {Change State.enemies ID NewEnemy}
+                        NewState = {AdjoinList State [enemies#NewEnemies]}
+                        {System.show 'The player ' #State.id.id# ' think that the submarine ' #ID# ' is located at position '#NewPosition}
+                        NewState
+
+                end   
+                
+ 
+
+
+            else
+
+            end
+
         else
-            State
-        end
+
+        State
     end
 
     /** SayDeath 
@@ -990,7 +1027,7 @@ in
     @pre
         (X, Y) coordonnates
     @post
-        true if the coordinate are on the map
+        true if the Coordonates are on the map
         false otherwise    
     */
     fun{IsOnMap X Y}
@@ -1054,7 +1091,7 @@ in
             if(Nb==0) then
                 nil
             else
-                enemy(id: (Input.nbPlayer - Nb +1) x:0 y:0)| {CreateEnemies Nb-1}
+                enemy(id: (Input.nbPlayer - Nb +1) x:nil y:nil)| {CreateEnemies Nb-1}
             end
         end
     in

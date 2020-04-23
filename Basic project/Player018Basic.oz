@@ -1,18 +1,6 @@
-/** State
-state( id(id<idNum> color:<color> name:Name) 
-                position:<position> 
-                lastPositions:nil | <position>
-                direction:<direction> 
-                surface: <true>|<false>
-                dive: <true>|<false>
-                loads: loads(mine:x missile:y drone:z sonar: u) 
-                weapons: weapons(mine:x missile:y drone:z sonar:u))
-*/
-%http://mozart2.org/mozart-v1/doc-1.4.0/tutorial/node3.html
 functor
 import
     Input
-    QTk at 'x-oz://system/wp/QTk.ozf'
     System
     OS 
 export
@@ -55,25 +43,10 @@ in
         State = current state of the submarine
         bind ID and position to a random position on the map
     */
-    fun{InitPosition ID Position State}
-        local
-            /*Ouvre une fenetre pour demander la position initiale */
-            fun{AskPosition}
-                Position X Y in
-                Position = {QTk.dialogbox load(defaultextension:"qdw" 
-                                    initialdir:"." 
-                                title:"Choose a initiale position : " 
-                                initialfile:"" 
-                                filetypes:q("Position" q("X" X) q("Y" Y) ) ) }  %normalement ouvre une fenetre mais pas sur
-                if Position.X > Input.nRow then skip end 
-                if Position.Y > Input.nColumn then skip end 
-                Position
-            end
-        in
-            ID = State.id
-            Position = {RandomPosition} %{AskPosition}
-            {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
-        end
+    fun{InitPosition ID Position State} 
+        ID = State.id
+        Position = {RandomPosition} 
+        {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
     end
 
     /** Move

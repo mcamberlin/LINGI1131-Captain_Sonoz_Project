@@ -42,6 +42,7 @@ define
         I = index
         Item = what to change
     @post
+        return a list where the I th element has been replaced by the element Item
     */
     fun{Change L I Item}
         case L
