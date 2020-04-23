@@ -1,6 +1,7 @@
 functor
 import
-	Player018Basic1
+	Player018Basic
+	Player018Medium
 export
 	playerGenerator:PlayerGenerator
 define
@@ -8,7 +9,7 @@ define
 in
 	fun{PlayerGenerator Kind Color ID}
 		case Kind
-		of player018basic1 then {Player018Basic1.portPlayer Color ID}
+		of player018basic then {Player018Basic.portPlayer Color ID}
 		else
 			nil
 		end

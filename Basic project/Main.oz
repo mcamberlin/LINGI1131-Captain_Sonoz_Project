@@ -1,7 +1,7 @@
 /* 
 Command in the terminal
     Compiling
-        ozc -c Input.oz GUI.oz Main.oz Player018Basic1.oz PlayerManager.oz
+        ozc -c Input.oz GUI.oz Main.oz Player018Basic.oz PlayerManager.oz
     Executing
         ozengine Main.ozf 
 */
