@@ -7,6 +7,9 @@ state( id(id<idNum> color:<color> name:Name)
                 dive: <true>|<false>
                 loads: loads(mine:x missile:y drone:z sonar: u) 
                 weapons: weapons(mine:x missile:y drone:z sonar:u))
+
+
+Second level of player
 */
 %http://mozart2.org/mozart-v1/doc-1.4.0/tutorial/node3.html
 functor
@@ -54,6 +57,8 @@ in
         ID = unbound; Position= unbound
         State = current state of the submarine
         bind ID and position to a random position on the map
+
+        Arthur : Rien a changer 
     */
     fun{InitPosition ID Position State}
         local
@@ -80,6 +85,8 @@ in
         ID = unbound; Position = unbound; Direction = unbound
         State = current state of the submarine
         Select a random position and bind ID, Position to new Position and Direction to new Direction
+
+        Arthur : garder en mémoire la derniere position de chaque joueur et se deplacer vers le plus proche 
     */ 
     fun{Move ID Position Direction State}
         /** RandomDirection
@@ -199,6 +206,8 @@ in
     
     /** Dive 
         State = current state of the submarine
+
+        Arthur : rien a changer 
     */
     fun{Dive State}
         {AdjoinList State [dive#true]}
@@ -216,6 +225,8 @@ in
             the item has nil value
             increase the load by one one the item selected (mine, missile, drone or sonar)
         return the new state of the submarine
+
+        Arthur : rien a changer 
     */
     fun{ChargeItem ID KindItem State}
         /** RandomItem
@@ -326,7 +337,9 @@ in
         State = current state of the submarine
         permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
         state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
-        Comprend pas comment envoyer un item....
+        
+        
+        Arthur : verifier si un ennemi est assez proche que pour le toucher en plus de regarder si on a des munitions 
     */
     fun{FireItem ID KindFire State}
         /* 
@@ -391,6 +404,9 @@ in
         Mine = unbound
     @post
         if a mine is ready to be fired, we randomly decided to explode it or not.
+
+
+        Arthur : exploser une mine si elle fait du degat a un ennemi
     */
     fun{FireMine ID Mine State}
         Fire NewState in
@@ -416,6 +432,8 @@ in
 
     /** IsDead
     the player is dead if his damage is greater than Input.maxDamage
+
+    Arthur : rien a chnager 
     */
     fun{IsDead Answer State}
         Answer = State.damage >= Input.maxDamage
@@ -428,6 +446,8 @@ in
         Direction = NewDirection of the submarine
     @post
         Announce to the others that the player with id ID has changed direction to Direction
+
+        Arthur : Il faut interpreter les msg pour tous les say
     */
     fun{SayMove ID Direction State}
         {System.show 'Le joueur a changé de direction vers'#Direction}
@@ -705,7 +725,10 @@ in
     @pre 
         Position
     @post
-        return a random position that is bounded by minDistanceMine and maxDistanceMine around Position*/
+        return a random position that is bounded by minDistanceMine and maxDistanceMine around Position
+
+        Arthur : poser la mine pres d'un ennemi ou au le plus proche possible de lui
+    */
     fun{PositionMine Position}
         Pos XMine YMine DeltaX DeltaY CondX CondY in 
         %Delta 
@@ -733,7 +756,10 @@ in
     end
 
     /**PositionMissile
-        give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position*/
+        give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position
+
+        Arthur : idem que pour positionMine essayer de toucher l'ennemi le plus proche     
+    */
     fun{PositionMissile Position}
         Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
         %Delta 
