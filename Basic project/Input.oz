@@ -64,7 +64,7 @@ in
 
    %%%% Style of game %%%%
 
-      IsTurnByTurn = true
+      IsTurnByTurn = false
 
    %%%% Description of the map %%%%
 
@@ -84,9 +84,9 @@ in
 
    %%%% Players description %%%%
 
-      NbPlayer = 3
-      Players = [player018basic player018basic player018basic]
-      Colors = [yellow green orange]
+      NbPlayer = 2
+      Players = [player018medium player018medium]
+      Colors = [yellow green]
       MaxDamage = 4
 
    %%%% Surface time/turns %%%%

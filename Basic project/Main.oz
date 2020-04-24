@@ -137,9 +137,6 @@ define
         end
     end
 
-    proc{Simultaneous}
-        skip
-    end
 
 
 
@@ -172,13 +169,11 @@ define
             end
         end
 
-        InitialState
     in
-        InitialState = gameState(
-                                nbPlayersAlive: Input.nbPlayer
-                                playersState: {StartPlayers Input.nbPlayer 1}
-                                )
-        InitialState
+        gameState(
+                    nbPlayersAlive: Input.nbPlayer
+                    playersState: {StartPlayers Input.nbPlayer 1}
+                    )
     end
 
     /** WhichFireItem
@@ -429,6 +424,14 @@ define
     end
 
 
+    /** #TreatGame
+    */
+    proc{TurnByTurn}
+        InitialState in
+        InitialState = {StartGame}
+        {InLoopTurnByTurn InitialState 1}
+    end
+
     /** InLoopTurnByTurn
     @pre
         GameState = current game state
@@ -550,12 +553,60 @@ define
     end
     
 
-    /** #TreatGame
-    */
-    proc{TurnByTurn}
-        InitialState in
+    proc{Simultaneous}
+        proc{LaunchThread ListPlayerState}
+            case ListPlayerState
+            of PlayerState|T then 
+                thread {InLoopSimultaneous PlayerState 1} end
+                {LaunchThread T}
+            else
+                skip
+            end
+        end
+        %We have to launch a thread for each player. And they have to play independently. 
+        InitialState
+        in
         InitialState = {StartGame}
-        {InLoopTurnByTurn InitialState 1}
+        {LaunchThread InitialState.playersState} %List of each playerState( port: {Get PLAYER_PORTS Acc} alive:true isAtSurface:true turnAtSurface:Input.turnSurface)
+        
+    end
+
+
+
+    proc{InLoopSimultaneous PlayerState I}
+
+        {System.show 'L etat du jouer est : '#PlayerState}
+
+        if(PlayerState.alive==false) then 
+            skip %this is the end for this player ... :(
+        end
+
+        %1. if first turn or surface ended -> send dive 
+        if I==1 then 
+            {Send PlayerState.port dive}
+        end
+
+        %2. Simulate thinking 
+        % I DON'T KNOW HOW TO WAIT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        %3. Choose direction. If surface -> end turn, wait Input.turnSurface seconds and Gui is notified 
+
+        %4. Broadcast the direction and also say too Gui
+
+        %5. Simulate thinking 
+
+        %6. Charge an item. Braodcast information if a weapon is ready 
+
+        %7. Simulate thinking 
+
+        %8. Fire an item. Broadcast information if touched an ennemy
+
+        %9. Simulate thinking 
+
+        %10. Explode a mine. Broadcast information if touched an ennemy
+
+        %11. End of turn -> repeat
+
     end
 
 in
@@ -569,9 +620,9 @@ in
     %Launch the game in the correct mode
     if(Input.isTurnByTurn) then
         {TurnByTurn}
+        {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
     else
         {Simultaneous}
     end
 
-    {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
 end
