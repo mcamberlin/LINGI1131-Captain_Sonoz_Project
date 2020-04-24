@@ -408,7 +408,7 @@ in
         {System.show 'la direction choisie pour Move est : ' #NewDirection}
 
         if(NewDirection == surface) then
-            NewState = {AdjoinList State [surface#true lastPositions#nil ]} % reset the last positions visited since last surface phase
+            NewState = {AdjoinList State [surface#true lastPositions#[NewPosition] ]} % reset the last positions visited since last surface phase
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
