@@ -8,6 +8,7 @@ proc{LaunchThread L}
 end
 
 proc{Trhead H}
+    {Time.delay {OS.rand} mod 5000}
     {Browse H}
 end
 

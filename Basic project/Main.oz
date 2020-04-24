@@ -11,6 +11,7 @@ import
     Input
     PlayerManager
     System
+    Time
     OS
 define
     GUIPORT
@@ -587,7 +588,8 @@ define
         end
 
         %2. Simulate thinking 
-        % I DON'T KNOW HOW TO WAIT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
+        
 
         %3. Choose direction. If surface -> end turn, wait Input.turnSurface seconds and Gui is notified 
 
