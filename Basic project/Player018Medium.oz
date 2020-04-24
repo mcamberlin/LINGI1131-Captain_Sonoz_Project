@@ -365,7 +365,7 @@ in
             NewPosition in
             case Direction 
             of surface then 
-                NewPosition = State.lastPositions.1
+                NewPosition = State.position
                 /** !!!!!!!!!!!!!!!!!!!!! ---------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ------------------------------ !!!!!!!!!!!!!!!!!!!!!!!!!
                     Précédemment c'était: NewPosition = {Last State.lastPositions}    
                     Avec ca on prend le dernier élément de lastPositions comme étant la dernière position visitée

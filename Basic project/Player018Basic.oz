@@ -126,7 +126,7 @@ in
         
         case NewDirection 
         of surface then 
-            NewPosition = {Last State.lastPositions}
+            NewPosition = State.position
         [] north then 
             NewPosition = pt(x:(State.position.x-1) y:State.position.y)
         [] south then 
