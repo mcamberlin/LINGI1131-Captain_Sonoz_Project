@@ -7,6 +7,20 @@ import
 export
     portPlayer:StartPlayer
 define
+    
+    Get
+    Change
+    IsIsland
+    RandomPosition
+
+    ManhattanDistance
+    PositionMine 
+    PositionMissile
+    
+    
+    IsOnMap
+    IsPositionOnMap
+
 
     InitPosition
     Move
@@ -28,21 +42,15 @@ define
     SayDeath
     SayDamageTaken
 
-    Get
-    Change
-    ManhattanDistance
-    PositionMine 
-    PositionMissile
-    RandomPosition
-    IsIsland
-    IsOnMap
-    IsPositionOnMap
+
+    
 
     StartPlayer
     TreatStream
 
 in
 
+/** ---------------------------- USEFUL FUNCTIONS ---------------------- */
     /** Get
     @pre
         L = list of elements
@@ -83,27 +91,205 @@ in
             nil
         end
     end
+
+   /** IsIsland
+        X, Y = position on the map
+        if the point(X,Y) is an island then true    
+        else false
+    */
+    fun{IsIsland X Y Map}
+        case Map
+        of H1|T1 then 
+            if(X ==1) then
+                case H1 
+                of H2|T2 then 
+                    if(Y==1) then
+                        if(H2 == 1) then %Sur une ile
+                            true
+                        else
+                            false
+                        end
+                    else
+                        {IsIsland X Y-1 T2|T1}
+                    end
+                else
+                    false
+                end
+            else
+                {IsIsland X-1 Y T1}
+            end
+        else
+            false
+        end
+    end
     
+    /** RandomPosition
+    @pre
+    @post
+        return a random position in water in the map
+    */
+    fun{RandomPosition}
+        X Y  in
+        X = {OS.rand} mod Input.nRow+1
+        Y = {OS.rand} mod Input.nColumn+1
+        %Check if on water
+        if {IsIsland X Y Input.map} then {RandomPosition}
+        else
+            pt(x:X y:Y)
+        end
+    end
+
+    /** ManhattanDistance
+    @pre
+        Position1 = pt(x:X1 y:Y1)
+        Position2 = pt(x:X2 y:Y2)
+    @post
+        return the manhattan distance between the two positions
+     */
+    fun{ManhattanDistance Position1 Position2}
+        if(Position1 == nil orelse Position2 == nil) then nil
+        else
+            {Abs Position1.x-Position2.x} + {Abs Position1.y-Position2.y}
+        end
+    end
+
+    /** IsOnMap
+    @pre
+        (X, Y) coordonnates
+    @post
+        true if the coordinate are on the map
+        false otherwise    
+    */
+    fun{IsOnMap X Y}
+        if(X=<Input.nRow andthen X>0) then
+            if(Y=<Input.nColumn andthen Y>0) then
+                true
+            else
+                false
+            end
+        else
+            false
+        end
+    end
+
+    /** IsPositionOnMap
+    @pre
+        Position
+    @post
+        true if the Position is on the map
+        false otherwise    
+    */
+    fun{IsPositionOnMap Position}
+        {IsOnMap Position.x Position.y}
+    end
+
+ /** ---------------------------- END useful functions ---------------------- */   
 
     /** InitPosition
+    @pre
         ID = unbound; Position= unbound
         State = current state of the submarine
+    @post
         bind ID and position to a random position on the map
     */
     fun{InitPosition ID Position State}
         ID = State.id
         Position = {RandomPosition} 
-        {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
+        {AdjoinList State [position#Position lastPositions#[Position]]} %Update the current state
     end
 
     /** Move
+    @pre
         ID = unbound; Position = unbound; Direction = unbound
         State = current state of the submarine
-        Select a random position and bind ID, Position to new Position and Direction to new Direction
-
-        Arthur : garder en mémoire une estimation de la position des joueurs et aller vers cette position
+    @post
+        Select a new position to go into the direction of the nearest enemy
+        Bind ID, Position and Direction according to the choise made to go into the direction of an enemy.
+        If an obstacle blocks the newPosition selected, a random one is choosen.
     */ 
     fun{Move ID Position Direction State}
+
+        /** SelectDirection
+        @pre  
+            L = list of enemies
+        @post
+            return the direction to the nearest enemy
+        */
+        fun{SelectDirection State} 
+            /**
+            @pre  
+                L = list of ennemies
+            @post
+                Look over the position known of enemies
+                the ID of the last enemy in enemies is returned
+                others, the ID to of the nearest enemy is returned
+            */
+            fun{NearestEnemy L ID MinX MinY State}
+                case L
+                of enemy(id:I position:P)|T then 
+                    DistX DistY in 
+
+                    DistX = {Abs P.x - State.position.x}
+                    DistY = {Abs P.y - State.position.y}
+
+                    %Both coordinates are known
+                    if(P.x \= 0 andthen P.y\= 0) then
+                        if(DistX < MinX) then 
+                            {NearestEnemy L I DistX MinY State}
+                        elseif(DistY<MinY) then
+                            {NearestEnemy L I MinX DistY State}
+                        else
+                            {NearestEnemy T ID MinX MinY State}
+                        end
+                    %x-coordinate is known
+                    elseif(P.x \= 0) then
+                        if(DistX < MinX ) then
+                            {NearestEnemy T I DistX MinY State}
+                        else
+                            {NearestEnemy T ID MinX MinY State}
+                        end
+                    %y-coordinate is known
+                    elseif(P.y \= 0) then
+                        if(DistY < MinY) then
+                            {NearestEnemy T I MinX DistY State}
+                        else
+                            {NearestEnemy T ID MinX MinY State}
+                        end
+                    %None coordinates is known
+                    else
+                        {NearestEnemy T ID MinX MinY State}
+                    end
+                else
+                    ID
+                end
+            end
+            I %ID of the nearest ennemy
+            Enemy
+        in
+            I = {NearestEnemy State.ennemies 1 Input.nRow Input.nColumn State}
+            Enemy = {Get State.ennemies I}
+            
+
+            if(Enemy.position.x > State.position.x) then south
+            elseif(Enemy.position.x < State.position.x) then north
+            elseif(Enemy.position.y > State.position.y) then east
+            elseif(Enemy.position.y < State.position.y) then west
+            elseif(Enemy.position.x ==  State.position.x) then
+                if(Enemy.position.y > State.position.y) then east
+                elseif(Enemy.position.y < State.position.y) then west
+                else
+                    % if the submarine is at the same position as its enemy, then go to surface
+                    surface
+                end
+            else
+                if(Enemy.position.x > State.position.x) then south
+                elseif(Enemy.position.x < State.position.x) then north
+                else
+                    % if the submarine is at the same position as its enemy, then go to surface
+                    surface
+                end
+            end
+        end
 
         /** NotAlreadyVisited
         @pre
@@ -139,6 +325,7 @@ in
         @post
             return the last element of the list L
         */
+        /* 
         fun{Last L}
             fun{RLast L Acc}
                 case L 
@@ -149,79 +336,67 @@ in
         in
             {RLast L nil}
         end
-
-        /**
-        @pre  
-            L = list of enemies
-        @post
-            return the direction to of the nearest enemy
         */
-        fun{SelectDirection State} 
-            /**
-            @pre  
-                L = liste of ennemies
-            @post
-                return the ID to of the nearest enemy
-            */
-            fun{NearestEnemy L ID MinX MinY State}
-                case L
-                of enemy(id:I position:P)|T then 
-                    DistX DistY in 
 
-                    DistX = {Abs P.x - State.position.x}
-                    DistY = {Abs P.y - State.position.y}
-
-                    %Both coordinates are known
-                    if(P.x \= 0 andthen P.y\= 0) then
-                        if(DistX < MinX) then 
-                            {NearestEnemy L I DistX MinY State}
-                        elseif(DistY<MinY) then
-                            {NearestEnemy L I MinX DistY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %x-coordinate is known
-                    elseif(P.x \= 0) then
-                        if(DistX < MinX ) then
-                            {NearestEnemy T I DistX MinY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %y-coordinate is known
-                    else
-                        if(DistY < MinY) then
-                            {NearestEnemy T I MinX DistY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    end
-                else
-                    ID
-                end
-            end
-            I %ID of the nearest ennemy
-            Enemy
+        /** RandomDirection
+        @pre
+        @post 
+            return a random direction (east, west, north, south, surface)
+        */
+        fun{RandomDirection}
+            NewDirection = {OS.rand} mod 5
         in
-            I = {NearestEnemy State.ennemies 1 Input.nRow Input.nColumn State}
-            Enemy = {Get State.ennemies I}
-            
+            if(NewDirection == 0) then surface
+            elseif(NewDirection == 1) then east
+            elseif(NewDirection == 2) then north
+            elseif(NewDirection == 3) then west
+            else 
+                south
+            end
+        end
 
-            if(Enemy.position.x > State.position.x) then south
-            elseif(Enemy.position.x < State.position.x) then north
-            elseif(Enemy.position.y > State.position.y) then east
-            elseif(Enemy.position.y < State.position.y) then west
-            elseif(Enemy.position.x ==  State.position.x) then
-                if(Enemy.position.y > State.position.y) then east
-                elseif(Enemy.position.y < State.position.y) then west
-                else
-                    surface
-                end
+        /** GetNewPosition
+        @pre 
+            Direction = the new direction selected for the submarine
+        @post
+            return the new Position according to the direction selected 
+        */
+        fun{GetNewPosition Direction State}
+            NewPosition in
+            case Direction 
+            of surface then 
+                NewPosition = State.lastPositions.1
+                /** !!!!!!!!!!!!!!!!!!!!! ---------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ------------------------------ !!!!!!!!!!!!!!!!!!!!!!!!!
+                    Précédemment c'était: NewPosition = {Last State.lastPositions}    
+                    Avec ca on prend le dernier élément de lastPositions comme étant la dernière position visitée
+                    mais à la ligne 409, on ajoute à chaque fois devant... Je pense donc qu'il faut changer par ce que j'ai mis....
+                    Tu valides ? Si oui, il faut aussi changer dans Player018Basic et du coup on peut supprimer la fonction Last au dessus
+                    24-04-2020
+                 */
+            [] north then 
+                NewPosition = pt(x:(State.position.x-1) y:State.position.y)
+            [] south then 
+                NewPosition = pt(x:(State.position.x+1) y:State.position.y)
+            [] east then 
+                NewPosition = pt(x:State.position.x y:(State.position.y+1))
+            else /* west*/
+                NewPosition = pt(x:State.position.x y:(State.position.y-1))
+            end
+
+            if( {Not {IsPositionOnMap NewPosition} } ) then 
+                {System.show 'The direction selected is outside the map'}
+                {System.show 'This case should never occur normally since the direction selected correspond to the direction of the nearest enemy'}
+                {GetNewPosition {RandomDirection} State}
+
+            elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
+                {System.show 'The direction selected correspond to an island'}
+                {GetNewPosition {RandomDirection} State}
+
+            elseif{IsAlreadyVisited NewPosition State} then
+                {System.show 'The direction selected correspond to a spot already visited'}
+                {GetNewPosition {RandomPosition} State}
             else
-                if(Enemy.position.x > State.position.x) then south
-                elseif(Enemy.position.x < State.position.x) then north
-                else
-                    surface
-                end
+                NewPosition
             end
         end
 
@@ -229,25 +404,8 @@ in
         NewPosition
         NewState
     in
-
-
         NewDirection = {SelectDirection State}
         {System.show 'la direction choisie pour Move est : ' #NewDirection}
-        
-        case NewDirection 
-        of surface then 
-            NewPosition = {Last State.lastPositions}
-        [] north then 
-            NewPosition = pt(x:(State.position.x-1) y:State.position.y)
-        [] south then 
-            NewPosition = pt(x:(State.position.x+1) y:State.position.y)
-        [] east then 
-            NewPosition = pt(x:State.position.x y:(State.position.y+1))
-        else /* west*/
-            NewPosition = pt(x:State.position.x y:(State.position.y-1))
-        end 
-
-        {System.show 'la nouvelle position est : '#NewPosition}
 
         if(NewDirection == surface) then
             NewState = {AdjoinList State [surface#true lastPositions#nil ]} % reset the last positions visited since last surface phase
@@ -255,21 +413,9 @@ in
             Position = NewPosition
             Direction = NewDirection
             NewState 
-
-        elseif( {Not {IsPositionOnMap NewPosition} } ) then 
-            {System.show 'The direction selected is outside the map'}
-            {Move ID Position Direction State}
-        
-        elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
-            {System.show 'The direction selected correspond to an island'}
-            {Move ID Position Direction State}
-
-        elseif{IsAlreadyVisited NewPosition State} then
-            {System.show 'The direction selected correspond to a spot already visited'}
-            {Move ID Position Direction State}
-
         else
-
+            NewPosition = {GetNewPosition NewDirection State}
+            {System.show 'la nouvelle position est : '#NewPosition}
             NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
             ID = State.id
             Position = NewPosition
@@ -280,16 +426,25 @@ in
     end 
 
     
-    /** Dive 
+    /** Dive
+    @pre
         State = current state of the submarine
+    @post
+        Update State
     */
     fun{Dive State}
-        {AdjoinList State [dive#true]}
+        if(State \= nil) then
+            {AdjoinList State [dive#true]}
+        else
+            nil
+        end
     end
 
     /** ChargeItem
+    @pre
         ID = unbound ; KindItem = unbound
         State = current state of the submarine
+    @post
         if(the loader reaches te right number of loads given in the Input file) then
             the id is bound
             a new item is created by binding it with the arg
@@ -318,7 +473,6 @@ in
         end
         NewState NewLoad NewWeapons NewLoads NewItem
     in
-        {System.show 'l etat du joueur est : ' #State}
         NewItem = {RandomItem}
         {System.show 'L item choisi dans chargeItem est : '#NewItem}
 
@@ -405,36 +559,134 @@ in
 
 
     /** FireItem
+    @pre
         ID = unbound; KindFire = unbound
         State = current state of the submarine
-        permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
-        state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
-        
+    @post
+        Check if one ennemy is close enough to be hitten.
+        if yes and an item is available then 
+            fire
+            Bind ID and KindFire 
+        else
+            no fire        
         
         Arthur : verifier si un ennemi est assez proche que pour le toucher en plus de regarder si on a des munitions 
     */
     fun{FireItem ID KindFire State}
+        /**
+        @pre  
+            L = list of ennemies
+        @post
+            Look over the position known of enemies
+            the ID of the last enemy in enemies is returned
+            others, the ID to of the nearest enemy is returned
+        */
+        fun{NearestEnemy L ID MinX MinY State}
+            case L
+            of enemy(id:I position:P)|T then 
+                DistX DistY in 
+
+                DistX = {Abs P.x - State.position.x}
+                DistY = {Abs P.y - State.position.y}
+
+                %Both coordinates are known
+                if(P.x \= 0 andthen P.y\= 0) then
+                    if(DistX < MinX) then 
+                        {NearestEnemy L I DistX MinY State}
+                    elseif(DistY<MinY) then
+                        {NearestEnemy L I MinX DistY State}
+                    else
+                        {NearestEnemy T ID MinX MinY State}
+                    end
+                %x-coordinate is known
+                elseif(P.x \= 0) then
+                    if(DistX < MinX ) then
+                        {NearestEnemy T I DistX MinY State}
+                    else
+                        {NearestEnemy T ID MinX MinY State}
+                    end
+                %y-coordinate is known
+                elseif(P.y \= 0) then
+                    if(DistY < MinY) then
+                        {NearestEnemy T I MinX DistY State}
+                    else
+                        {NearestEnemy T ID MinX MinY State}
+                    end
+                %None coordinates is known
+                else
+                    {NearestEnemy T ID MinX MinY State}
+                end
+            else
+                ID
+            end
+        end
+
+        /** IsReachableByMissile
+        @pre
+            State = State of the current player
+            EnemyPosition = position of the nearest enemy
+        @post
+            return true if the enemy is reachable by a missile
+            false others
+        */
+        fun{IsReachableByMissile EnemyPosition State}
+            ManDistance in
+            ManDistance = {ManhattanDistance State.position EnemyPosition}
+            if(ManDistance < Input.maxDistanceMissile andthen ManDistance > Input.minDistanceMissile) then
+                true
+            else
+                false
+            end
+        end
+
+        /** IsReachableByMine
+        @pre
+            State = State of the current player
+            EnemyPosition = position of the nearest enemy
+        @post
+            return true if the enemy is reachable by a mine
+            false others
+        */
+        fun{IsReachableByMine EnemyPosition State}
+            ManDistance in
+            ManDistance = {ManhattanDistance State.position EnemyPosition}
+            if(ManDistance < Input.maxDistanceMine andthen ManDistance > Input.minDistanceMine) then
+                true
+            else
+                false
+            end
+        end
+
         /* 
         1. check wich item is available
         2. fire the item by decreasing the specific weapon 
         3. Bind ID and KindFire to the weapon   Comment demander position????
         */
-        NewState NewWeapon in
-        if State.weapons.mine > 0 then
+        NewState NewWeapon EnemyID Enemy in
+
+        %Check if an enemy is close to you
+        EnemyID = {NearestEnemy State.enemies 1 Input.nRow Input.nColumn State}
+        Enemy = {Get State.ennemies EnemyID}
+
+        %Check if a missile is available and an enemy is reachable
+        if(State.weapons.missile > 0 andthen {IsReachableByMissile Enemy.position State} ) then
+        
+            NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            KindFire = missile(Enemy.position)  
+
+        %Check if a mine is available and an enemy is reachable
+        elseif (State.weapons.mine > 0 andthen {IsReachableByMine Enemy.position State} ) then
             NewMines Position in
-            Position = {PositionMine State.position}
+            Position = Enemy.position
             NewMines = Position|State.mines
             NewWeapon = {AdjoinList State.weapons [mine#State.weapons.mine-1]}
             NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
-            KindFire = mine(Position) 
+            KindFire = mine(Enemy.position) 
 
-        elseif State.weapons.missile > 0 then
-            NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
-            NewState = {AdjoinList State [weapons#NewWeapon]}
-            ID = State.id
-            KindFire = missile({PositionMissile NewState.position})   
-
+        %Check if a drone is available 
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
@@ -448,23 +700,21 @@ in
                     KindFire = drone(column :PositionSelected.y)
                 end
             end
-
+        %Check if a sonar is available 
         elseif State.weapons.sonar > 0 then
             NewWeapon = {AdjoinList State.weapons [sonar#State.weapons.sonar-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = sonar
 
-        else 
+        %None weapons is available
+        else
             ID = State.id
             KindFire = null
             NewState = State
         end
-
-        
         {System.show 'the weapon fired is '#KindFire}
         NewState
-        
     end
 
     
@@ -938,94 +1188,6 @@ in
 
     end
 
-    /**ManhattanDistance
-     */
-    fun{ManhattanDistance Position1 Position2}
-        if(Position1 == nil) then nil
-        elseif(Position2 == nil) then nil
-        else
-            {Abs Position1.x-Position2.x} + {Abs Position1.y-Position2.y}
-        end
-    end
-
-
-   /** IsIsland
-        X, Y = position on the map
-        if the point(X,Y) is an island then true    
-        else false
-    */
-    fun{IsIsland X Y Map}
-        case Map
-        of H1|T1 then 
-            if(X ==1) then
-                case H1 
-                of H2|T2 then 
-                    if(Y==1) then
-                        if(H2 == 1) then %Sur une ile
-                            true
-                        else
-                            false
-                        end
-                    else
-                        {IsIsland X Y-1 T2|T1}
-                    end
-                else
-                    false
-                end
-            else
-                {IsIsland X-1 Y T1}
-            end
-        else
-            false
-        end
-    end
-
-    /** IsOnMap
-    @pre
-        (X, Y) coordonnates
-    @post
-        true if the coordinate are on the map
-        false otherwise    
-    */
-    fun{IsOnMap X Y}
-        if(X=<Input.nRow andthen X>0) then
-            if(Y=<Input.nColumn andthen Y>0) then
-                true
-            else
-                false
-            end
-        else
-            false
-        end
-    end
-
-    /** IsPositionOnMap
-    @pre
-        Position
-    @post
-        true if the Position is on the map
-        false otherwise    
-    */
-    fun{IsPositionOnMap Position}
-        {IsOnMap Position.x Position.y}
-    end
-
-
-    /** RandomPosition
-    @pre
-    @post
-        return a random position in water in the map
-    */
-    fun{RandomPosition}
-        X Y  in
-        X = {OS.rand} mod Input.nRow+1
-        Y = {OS.rand} mod Input.nColumn+1
-        %Check if on water
-        if {IsIsland X Y Input.map} then {RandomPosition}
-        else
-            pt(x:X y:Y)
-        end
-    end
 
     /** StartPlayer
         @pre

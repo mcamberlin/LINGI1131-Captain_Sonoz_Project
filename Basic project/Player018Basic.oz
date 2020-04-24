@@ -308,7 +308,13 @@ in
         3. Bind ID and KindFire to the weapon   Comment demander position????
         */
         NewState NewWeapon in
-        if State.weapons.mine > 0 then
+        if State.weapons.missile > 0 then
+            NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
+            NewState = {AdjoinList State [weapons#NewWeapon]}
+            ID = State.id
+            KindFire = missile({PositionMissile NewState.position})
+
+        elseif State.weapons.mine > 0 then
             NewMines Position in
             Position = {PositionMine State.position}
             NewMines = Position|State.mines
@@ -316,13 +322,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
             KindFire = mine(Position) 
-
-        elseif State.weapons.missile > 0 then
-            NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
-            NewState = {AdjoinList State [weapons#NewWeapon]}
-            ID = State.id
-            KindFire = missile({PositionMissile NewState.position})   
-
+            
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
