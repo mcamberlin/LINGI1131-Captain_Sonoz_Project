@@ -10,17 +10,17 @@ define
     
     Get
     Change
+    Remove
     IsIsland
     RandomPosition
-
     ManhattanDistance
     PositionMine 
     PositionMissile
-    
-    
     IsOnMap
     IsPositionOnMap
-
+    NearestEnemy
+    IsReachableByMissile
+    IsReachableByMine
 
     InitPosition
     Move
@@ -88,6 +88,26 @@ in
                 H|{Change T I-1 Item}
             end
         else 
+            nil
+        end
+    end
+
+    /** Remove
+    @pre
+        L = list of items
+        Item = item to remove from the list L
+    @post
+        return a new list L2 where Item has been removed from L
+    */
+    fun{Remove L Item}
+        case L
+        of H|T then
+            if (H == Item)  then
+                {Remove T Item}
+            else
+                H|{Remove T Item}
+            end
+        else
             nil
         end
     end
@@ -183,6 +203,91 @@ in
         {IsOnMap Position.x Position.y}
     end
 
+        /**
+    @pre  
+        L = list of enemies
+    @post
+        Look over the position known of enemies
+        the ID to of the nearest enemy is returned
+        if none positions of enemies is known, then the ID of the last enemy in enemies is returned
+    */
+    fun{NearestEnemy L ID MinX MinY State}
+        case L
+        of enemy(id:I position:P)|T then 
+            DistX DistY in 
+
+            DistX = {Abs P.x - State.position.x}
+            DistY = {Abs P.y - State.position.y}
+
+            %Both coordinates are known
+            if(P.x \= 0 andthen P.y\= 0) then
+                if(DistX < MinX) then 
+                    {NearestEnemy L I DistX MinY State}
+                elseif(DistY<MinY) then
+                    {NearestEnemy L I MinX DistY State}
+                else
+                    {NearestEnemy T ID MinX MinY State}
+                end
+            %x-coordinate is known
+            elseif(P.x \= 0) then
+                if(DistX < MinX ) then
+                    {NearestEnemy T I DistX MinY State}
+                else
+                    {NearestEnemy T ID MinX MinY State}
+                end
+            %y-coordinate is known
+            elseif(P.y \= 0) then
+                if(DistY < MinY) then
+                    {NearestEnemy T I MinX DistY State}
+                else
+                    {NearestEnemy T ID MinX MinY State}
+                end
+            %None coordinates is known
+            else
+                {NearestEnemy T ID MinX MinY State}
+            end
+        else
+            ID
+        end
+    end
+
+    /** IsReachableByMissile
+    @pre
+        State = State of the current player
+        EnemyPosition = position of the nearest enemy
+    @post
+        return true if the enemy is reachable by a missile
+        false others
+    */
+    fun{IsReachableByMissile EnemyPosition State}
+        ManDistance in
+        ManDistance = {ManhattanDistance State.position EnemyPosition}
+        if(ManDistance =< Input.maxDistanceMissile andthen ManDistance >= Input.minDistanceMissile) then
+            true
+        else
+            false
+        end
+    end
+
+    /** IsReachableByMine
+    @pre
+        State = State of the current player
+        EnemyPosition = position of the nearest enemy
+    @post
+        return true if the enemy is reachable by a mine
+        false others
+    */
+    fun{IsReachableByMine EnemyPosition State}
+        ManDistance in
+        ManDistance = {ManhattanDistance State.position EnemyPosition}
+        if(ManDistance =< Input.maxDistanceMine andthen ManDistance >= Input.minDistanceMine) then
+            true
+        else
+            false
+        end
+    end
+
+
  /** ---------------------------- END useful functions ---------------------- */   
 
     /** InitPosition
@@ -216,53 +321,6 @@ in
             return the direction to the nearest enemy
         */
         fun{SelectDirection State} 
-            /**
-            @pre  
-                L = list of ennemies
-            @post
-                Look over the position known of enemies
-                the ID of the last enemy in enemies is returned
-                others, the ID to of the nearest enemy is returned
-            */
-            fun{NearestEnemy L ID MinX MinY State}
-                case L
-                of enemy(id:I position:P)|T then 
-                    DistX DistY in 
-
-                    DistX = {Abs P.x - State.position.x}
-                    DistY = {Abs P.y - State.position.y}
-
-                    %Both coordinates are known
-                    if(P.x \= 0 andthen P.y\= 0) then
-                        if(DistX < MinX) then 
-                            {NearestEnemy L I DistX MinY State}
-                        elseif(DistY<MinY) then
-                            {NearestEnemy L I MinX DistY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %x-coordinate is known
-                    elseif(P.x \= 0) then
-                        if(DistX < MinX ) then
-                            {NearestEnemy T I DistX MinY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %y-coordinate is known
-                    elseif(P.y \= 0) then
-                        if(DistY < MinY) then
-                            {NearestEnemy T I MinX DistY State}
-                        else
-                            {NearestEnemy T ID MinX MinY State}
-                        end
-                    %None coordinates is known
-                    else
-                        {NearestEnemy T ID MinX MinY State}
-                    end
-                else
-                    ID
-                end
-            end
             I %ID of the nearest ennemy
             Enemy
         in
@@ -366,13 +424,6 @@ in
             case Direction 
             of surface then 
                 NewPosition = State.position
-                /** !!!!!!!!!!!!!!!!!!!!! ---------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ------------------------------ !!!!!!!!!!!!!!!!!!!!!!!!!
-                    Précédemment c'était: NewPosition = {Last State.lastPositions}    
-                    Avec ca on prend le dernier élément de lastPositions comme étant la dernière position visitée
-                    mais à la ligne 409, on ajoute à chaque fois devant... Je pense donc qu'il faut changer par ce que j'ai mis....
-                    Tu valides ? Si oui, il faut aussi changer dans Player018Basic et du coup on peut supprimer la fonction Last au dessus
-                    24-04-2020
-                 */
             [] north then 
                 NewPosition = pt(x:(State.position.x-1) y:State.position.y)
             [] south then 
@@ -565,104 +616,14 @@ in
     @post
         Check if one ennemy is close enough to be hitten.
         if yes and an item is available then 
-            fire
+            fire and decreasing the specific weapon
             Bind ID and KindFire 
         else
             no fire        
-        
-        Arthur : verifier si un ennemi est assez proche que pour le toucher en plus de regarder si on a des munitions 
     */
     fun{FireItem ID KindFire State}
-        /**
-        @pre  
-            L = list of ennemies
-        @post
-            Look over the position known of enemies
-            the ID of the last enemy in enemies is returned
-            others, the ID to of the nearest enemy is returned
-        */
-        fun{NearestEnemy L ID MinX MinY State}
-            case L
-            of enemy(id:I position:P)|T then 
-                DistX DistY in 
-
-                DistX = {Abs P.x - State.position.x}
-                DistY = {Abs P.y - State.position.y}
-
-                %Both coordinates are known
-                if(P.x \= 0 andthen P.y\= 0) then
-                    if(DistX < MinX) then 
-                        {NearestEnemy L I DistX MinY State}
-                    elseif(DistY<MinY) then
-                        {NearestEnemy L I MinX DistY State}
-                    else
-                        {NearestEnemy T ID MinX MinY State}
-                    end
-                %x-coordinate is known
-                elseif(P.x \= 0) then
-                    if(DistX < MinX ) then
-                        {NearestEnemy T I DistX MinY State}
-                    else
-                        {NearestEnemy T ID MinX MinY State}
-                    end
-                %y-coordinate is known
-                elseif(P.y \= 0) then
-                    if(DistY < MinY) then
-                        {NearestEnemy T I MinX DistY State}
-                    else
-                        {NearestEnemy T ID MinX MinY State}
-                    end
-                %None coordinates is known
-                else
-                    {NearestEnemy T ID MinX MinY State}
-                end
-            else
-                ID
-            end
-        end
-
-        /** IsReachableByMissile
-        @pre
-            State = State of the current player
-            EnemyPosition = position of the nearest enemy
-        @post
-            return true if the enemy is reachable by a missile
-            false others
-        */
-        fun{IsReachableByMissile EnemyPosition State}
-            ManDistance in
-            ManDistance = {ManhattanDistance State.position EnemyPosition}
-            if(ManDistance < Input.maxDistanceMissile andthen ManDistance > Input.minDistanceMissile) then
-                true
-            else
-                false
-            end
-        end
-
-        /** IsReachableByMine
-        @pre
-            State = State of the current player
-            EnemyPosition = position of the nearest enemy
-        @post
-            return true if the enemy is reachable by a mine
-            false others
-        */
-        fun{IsReachableByMine EnemyPosition State}
-            ManDistance in
-            ManDistance = {ManhattanDistance State.position EnemyPosition}
-            if(ManDistance < Input.maxDistanceMine andthen ManDistance > Input.minDistanceMine) then
-                true
-            else
-                false
-            end
-        end
-
-        /* 
-        1. check wich item is available
-        2. fire the item by decreasing the specific weapon 
-        3. Bind ID and KindFire to the weapon   Comment demander position????
-        */
-        NewState NewWeapon EnemyID Enemy in
+        NewState NewWeapon EnemyID Enemy 
+    in
 
         %Check if an enemy is close to you
         EnemyID = {NearestEnemy State.enemies 1 Input.nRow Input.nColumn State}
@@ -670,7 +631,6 @@ in
 
         %Check if a missile is available and an enemy is reachable
         if(State.weapons.missile > 0 andthen {IsReachableByMissile Enemy.position State} ) then
-        
             NewWeapon = {AdjoinList State.weapons [missile#State.weapons.missile-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
@@ -691,15 +651,37 @@ in
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
-            local Random PositionSelected in
+            
+            case Enemy.position
+            of pt(x:0 y:0) then 
+                Random PositionSelected in
                 PositionSelected = {RandomPosition}
                 Random = {OS.rand} mod 2
                 if(Random == 0) then 
-                    KindFire = drone(row :PositionSelected.x)
+                    KindFire = drone(row: PositionSelected.x)
                 else
-                    KindFire = drone(column :PositionSelected.y)
+                    KindFire = drone(column: PositionSelected.y)
                 end
+            [] pt(x:X y:0) then 
+                Y in 
+                Y = {OS.rand} mod Input.nbColumn
+                KindFire = drone(column: Y)
+            [] pt(x:0 y:Y) then
+                X in
+                X = {OS.rand} mod Input.nbRow
+                KindFire = drone(row :X)
+            []pt(x:X y:Y) then
+                Random in
+                Random = {OS.rand} mod 2
+                if(Random == 0) then 
+                    KindFire = drone(row :X)
+                else
+                    KindFire = drone(column :Y)
+                end
+            else
+                {System.show 'It should never occur'}
             end
+            
         %Check if a sonar is available 
         elseif State.weapons.sonar > 0 then
             NewWeapon = {AdjoinList State.weapons [sonar#State.weapons.sonar-1]}
@@ -717,43 +699,97 @@ in
         NewState
     end
 
-    
-    
 
     /** FireMine(ID Mine) 
     @pre
         ID = unbound
         Mine = unbound
     @post
-        if a mine is ready to be fired, we randomly decided to explode it or not.
-
-
-        Arthur : exploser une mine si elle fait du degat a un ennemi
+        if a mine is ready to be fired, we explode it only if it can damage an enemy
     */
     fun{FireMine ID Mine State}
-        Fire NewState in
-        case State.mines 
-        of M|T then
-            Fire = {OS.rand} mod 2
-            if Fire == 0 then %The first mine of the list explodes
-                Mine = M
-                ID = State.id
-                NewState = {AdjoinList State [mines#T]}
-                NewState
-            else %Do not want to explode a mine
-                Mine = null
-                ID = State.id
-                State
+
+        /** IsDamageableByMine
+        @pre 
+            EnemyPosition = enemy position
+            MinePosition = mine position
+        @post 
+            return true if exploding a the mine in position MinePosition will cause damage to enemy
+            false others
+        */
+        fun{IsDamageableByMine EnemyPosition MinePosition }
+            ManDistance 
+        in
+            ManDistance = {ManhattanDistance EnemyPosition MinePosition}
+            if(ManDistance < 2) then
+                true
+            else
+                false
             end
-        else % None mine to place
+        end
+
+        /** CanDamageEnemy
+        @pre
+            L = list of mines
+            Enemy = enemy(id: I position:pt(x:X y:Y))
+        @post
+            return the position of the mine to explode
+            if none mine can damage an enemy, return false
+        */
+        fun{CanDamageEnemy L Enemies}
+            fun{RecursiveCanDamageEnemy L Enemy}
+                case L
+                of pt(x:X y:Y)| T then
+                    if( {IsDamageableByMine Enemy.position pt(x:X y:Y)}) then
+                        pt(x:X y:Y)
+                    else
+                        {RecursiveCanDamageEnemy T Enemy}
+                    end
+                else
+                    false
+                end
+            end
+        in
+            case Enemies
+            of enemy(id:I position:P)|T then
+                R in 
+                R = {RecursiveCanDamageEnemy L enemy(id:I position:P)}
+                if(R == false) then
+                    {CanDamageEnemy L T}
+                else 
+                    R
+                end
+            else
+                false
+            end
+        end
+
+        Fire NewMines NewState 
+        
+    in
+        Fire = {CanDamageEnemy State.mines State.enemies} 
+        %Fire is either false or pt(x:X y:Y) the position of the mine to explode
+
+        % No mine can cause a damage to enemy
+        if(Fire == false) then 
             Mine = null
             ID = State.id
             State
+        
+        %There is a mine near the enemy that can damage him
+        else
+            NewMines = {Remove State.mines Fire} %remove the mine exploded from the list of mines
+            Mine = Fire
+            ID = State.id
+            NewState = {AdjoinList State [mines#NewMines]}
+            NewState
         end
     end
 
+
+
     /** IsDead
-    the player is dead if his damage is greater than Input.maxDamage
+        the player is dead if his damage is greater than Input.maxDamage
     */
     fun{IsDead Answer State}
         Answer = State.damage >= Input.maxDamage
@@ -771,6 +807,9 @@ in
     */
     fun{SayMove ID Direction State}
         {System.show 'Le joueur a changé de direction vers'#Direction}
+
+
+        
         State
     end
 
