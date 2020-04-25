@@ -1,10 +1,3 @@
-/* 
-Command in the terminal
-    Compiling
-        ozc -c Input.oz GUI.oz Main.oz Player018Basic.oz PlayerManager.oz
-    Executing
-        ozengine Main.ozf 
-*/
 functor
 import
     GUI
@@ -16,6 +9,8 @@ import
 define
     GUIPORT
     PLAYER_PORTS
+
+    /** ---------------------------- USEFUL FUNCTIONS ---------------------- */
 
     /**
     @pre
@@ -37,7 +32,7 @@ define
         end
     end
 
-    /**
+    /** Change
     @pre 
         L = list
         I = index
@@ -88,7 +83,12 @@ define
         {System.show 'nbPlayersAlive =  '#GameState.nbPlayersAlive}
         {PrintPlayer GameState.playersState} 
     end
-    
+    /** DisplayWinner
+            @pre 
+                PlayersState = liste de playerState
+            @post
+                Affiche un message pour indiquer le gagnant de la partie
+    */
     proc{DisplayWinner PlayersState}
         case PlayersState
         of H|T then 
@@ -101,10 +101,12 @@ define
                 {DisplayWinner T}
             end
         else
-            {System.show 'We cannot find the winner :('}
+            {System.show 'There is no winner. Several submarines sinks at the same time'}
         end
     end
 
+    /** ---------------------------- END useful functions ---------------------- */
+   
 
     /** CreateEachPlayer
     @pre 
@@ -425,8 +427,7 @@ define
     end
 
 
-    /** #TreatGame
-    */
+
     proc{TurnByTurn}
         InitialState in
         InitialState = {StartGame}
@@ -447,15 +448,14 @@ define
 
             Index TestIndex CurrentPlayer in 
             TestIndex = I mod (Input.nbPlayer)
-            if TestIndex == 0 then Index = 3
+            if TestIndex == 0 then Index = Input.nbPlayer
             else
                 Index = TestIndex
             end
-            CurrentPlayer = {Get GameState.playersState Index}
-
-
+            
             {System.show 'Au tour' #I# 'pour le joueur : '#Index}
-            {System.show 'Etat du jeu : ' #GameState}
+
+            CurrentPlayer = {Get GameState.playersState Index}
             {System.show '     Etat du joueur actuel : ' #CurrentPlayer}
 
             %0. Si le joueur est deja mort
@@ -466,7 +466,7 @@ define
             
             %1                   
             elseif (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
-            %NOTE : pas sur que ca fonctionnne A DISCUTER car CurrentPlayer.turnAtSurface ne sera jamais a 0 :/
+            
                 NewPlayerState NewPlayersState NewGameState in
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
                 NewPlayersState = {Change GameState.playersState Index NewPlayerState }
@@ -475,7 +475,8 @@ define
                 {InLoopTurnByTurn NewGameState I+1}
 
             %2
-            elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
+            %if it's the first round or the submarine is just going to dive on the previous round
+            elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then 
                 NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
                 in
                 {System.show '%2.'}
@@ -486,7 +487,7 @@ define
                 {System.show '%3.'}
                 {Send NewPlayerState.port move(ID Position Direction)}
                 {Wait ID} {Wait Position} {Wait Direction}
-                {System.show 'The State of the player is '#ID}
+                {System.show 'The State of the player is '#NewPlayerState}
                 if(Direction == surface) then
                     %4. the player want to go at surface 
                     {System.show '%4.'}
@@ -501,6 +502,7 @@ define
                     %5. the player want to move to a direction
                     {System.show '%5.'}
                     %{Broadcast PLAYER_PORTS sayMove(ID Direction)}
+                    %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FAUDRAIT PAS FAIRE ce qui est au dessus justement ?
                     {Send GUIPORT movePlayer(ID Position)}
                     %6. the player charge an item
                     {System.show '%6.'}
@@ -540,14 +542,7 @@ define
                 {System.show 'probleme dans les conditions turnbyturn'}
                 skip
             end
-        else
-            /** DisplayWinner
-            @pre 
-                PlayersState = liste de playerState
-            @post
-                Affiche un message pour indiquer le gagnant de la partie
-            */
-            
+        else            
             {DisplayWinner GameState.playersState}
             {System.show 'EndGame'} 
         end
@@ -622,9 +617,8 @@ in
     %Launch the game in the correct mode
     if(Input.isTurnByTurn) then
         {TurnByTurn}
-        {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
     else
         {Simultaneous}
     end
-
+     {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
 end
