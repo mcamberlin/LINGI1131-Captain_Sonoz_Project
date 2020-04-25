@@ -9,7 +9,9 @@ export
 define
     
     Get
+    GetEnemy
     Change
+    ChangeEnemy
     Remove
     IsIsland
     RandomPosition
@@ -71,6 +73,29 @@ in
         end
     end
 
+    /** GetEnemy
+    @pre
+        L = list of enemies
+        ID = ID of the element to return
+    @post
+        return the enemy with id ID
+     */
+    fun{GetEnemy L ID}
+        case L
+        of H|T then
+            if(H.id == ID) then
+                H
+            else
+                {GetEnemy T ID}
+            end
+        else
+            {System.show 'This case should never occur'}
+            nil
+        end
+    end
+
+
+
     /** Change
     @pre 
         L = list
@@ -86,6 +111,27 @@ in
                 Item|T
             else
                 H|{Change T I-1 Item}
+            end
+        else 
+            nil
+        end
+    end
+
+    /** ChangeEnemy
+    @pre 
+        L = list of enemies
+        ID = id of the enemy to replace
+        NewEnemy = what to change
+    @post
+        return a list where the enemy with id ID has been replaced by the NewEnemy
+    */
+    fun{ChangeEnemy L ID NewEnemy}
+        case L
+        of H|T then
+            if(H.id == ID) then 
+                NewEnemy|T
+            else
+                H|{ChangeEnemy T ID NewEnemy}
             end
         else 
             nil
@@ -391,7 +437,7 @@ in
         in
             I = {NearestEnemy State.enemies State.enemies.1.id Input.nRow Input.nColumn State}
             {System.show 'I = ' #I}
-            Enemy = {Get State.enemies I.id}
+            Enemy = {Get State.enemies I}
             EnemyPosition = Enemy.position
             {System.show 'EnemyPosition = ' #EnemyPosition}
 
@@ -715,7 +761,7 @@ in
 
         %Check if an enemy is close to you
         EnemyID = {NearestEnemy State.enemies State.enemies.1.id Input.nRow Input.nColumn State}
-        Enemy = {Get State.enemies EnemyID.id}
+        Enemy = {Get State.enemies EnemyID}
 
         %Check if a missile is available and an enemy is reachable
         if(State.weapons.missile > 0 andthen {IsReachableByMissile Enemy.position State} ) then
@@ -895,7 +941,7 @@ in
     fun{SayMove ID Direction State}
         NewPosition NewEnemy NewEnemies NewState Enemy 
     in
-        if(ID == State.id.id) then
+        if(ID == State.id) then
             {System.show 'the player has changed direction to ' #Direction}
         else
             case Direction
@@ -903,30 +949,30 @@ in
                 State
             [] north then 
                 NewPosition = pt(x:(State.position.x-1) y:State.position.y)
-                Enemy = {Get State.enemies ID.id}
+                Enemy = {GetEnemy State.enemies ID.id}
                 NewEnemy = {AdjoinList Enemy [position#NewPosition]}
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             [] south then 
                 NewPosition = pt(x:(State.position.x+1) y:State.position.y)
-                Enemy = {Get State.enemies ID.id}
+                Enemy = {GetEnemy State.enemies ID.id}
                 NewEnemy = {AdjoinList Enemy [position#NewPosition]}
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             [] east then 
                 NewPosition = pt(x:State.position.x y:(State.position.y+1))
-                Enemy = {Get State.enemies ID.id}
+                Enemy = {GetEnemy State.enemies ID.id}
                 NewEnemy = {AdjoinList Enemy [position#NewPosition]}
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             else /* west*/
                 NewPosition = pt(x:State.position.x y:(State.position.y-1))
-                Enemy = {Get State.enemies ID.id}
+                Enemy = {GetEnemy State.enemies ID.id}
                 NewEnemy = {AdjoinList Enemy [position#NewPosition]}
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             end
@@ -1123,9 +1169,9 @@ in
             % The submarine ID is located in row X
             if Answer then 
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID.id}.position [x#X]}
+                NewPosition = {AdjoinList {GetEnemy State.enemies ID.id}.position [x#X]}
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' has detected the submarine ' #ID# ' in row '#X# 'thanks to its drone'}
                 NewState
@@ -1138,7 +1184,7 @@ in
             if Answer then 
                 % The submarine ID is located in column Y
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID.id}.position [y#Y]}
+                NewPosition = {AdjoinList {GetEnemy State.enemies ID.id}.position [y#Y]}
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
@@ -1201,7 +1247,14 @@ in
         case Answer
         of pt(x:X y:Y) then
             Enemy EnemyPosition in 
-            Enemy = {Get State.enemies ID.id}
+            {System.show 'State.enemies : ' #State.enemies} 
+            /* Je m'attends à #([ enemy(id:1 position:position(x:? y:?)) ]) 
+            et non à [enemy(id:id(color:orange id:1 name:'JoueurBasic'#1) position:position(x:2 y:7))])
+            Quid d'ou vient ces infos en trop ?
+            */
+            {System.show 'ID.id : ' #ID.id}
+            Enemy = {GetEnemy State.enemies ID.id}
+            {System.show 'Enemy : ' #Enemy}
             EnemyPosition = Enemy.position
             
             % None coordinate was known before
@@ -1209,7 +1262,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID.id NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             
@@ -1223,7 +1276,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:0)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID.id NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState
@@ -1234,7 +1287,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:0 y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID.id NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState            
@@ -1245,7 +1298,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID.id NewEnemy}
+                NewEnemies = {ChangeEnemy State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState                 
@@ -1263,7 +1316,7 @@ in
         Display an informative message of the death of the player id
     */
     fun{SayDeath ID State}
-        {System.show 'This player is dead :'#ID.id}
+        {System.show 'This player '#ID.id# ' is dead' }
         State
     end
 
@@ -1310,7 +1363,7 @@ in
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)
                             mines: nil
-                            enemies: {CreateEnemies Input.nbPlayer}
+                            enemies: {Remove {CreateEnemies Input.nbPlayer} enemy(id:ID position: pt(x:0 y:0))}
                             )
         thread
             {TreatStream Stream InitialState}
