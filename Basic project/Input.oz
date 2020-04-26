@@ -64,30 +64,30 @@ in
 
    %%%% Style of game %%%%
 
-      IsTurnByTurn = false
+      IsTurnByTurn = true
 
    %%%% Description of the map %%%%
 
-      NRow = 5 %10
+      NRow = 10
       NColumn = 10
 
       Map = [[0 0 0 0 0 0 0 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]
       [0 0 0 1 1 0 0 0 0 0]
       [0 0 1 1 0 0 1 0 0 0]
-      [0 0 0 0 0 0 0 0 0 0]]
-      /*[0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
       [0 0 0 1 0 0 1 1 0 0]
       [0 0 1 1 0 0 1 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]
-      [0 0 0 0 0 0 0 0 0 0]]*/
+      [0 0 0 0 0 0 0 0 0 0]]
 
    %%%% Players description %%%%
 
       NbPlayer = 2
-      Players = [player018basic player018basic]
-      Colors = [orange green]
-      MaxDamage = 4
+      Players = [player018basic player018medium]
+      Colors = [orange black]
+      MaxDamage = 5
 
    %%%% Surface time/turns %%%%
 
@@ -95,10 +95,10 @@ in
 
    %%%% Number of load for each item %%%%
 
-      Missile = 3
-      Mine = 3
-      Sonar = 3
-      Drone = 3
+      Missile = 2
+      Mine = 2
+      Sonar = 2
+      Drone = 2
 
    %%%% Distances of placement %%%%
 
@@ -109,8 +109,8 @@ in
 
    %%%% Thinking parameters (only in simultaneous) %%%%
 
-      ThinkMin = 500
-      ThinkMax = 3000
+      ThinkMin = 50
+      ThinkMax = 100
 
    %%%% Waiting time for the GUI between each effect %%%%
 

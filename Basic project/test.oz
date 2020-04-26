@@ -1,93 +1,125 @@
-declare 
-proc{LaunchThread L}
-    case L
-    of H|T then thread {Trhead H} end {LaunchThread T}
-    else
-        skip
-    end
-end
-
-proc{Trhead H}
-    {Time.delay {OS.rand} mod 5000}
-    {Browse H}
-end
-
-{LaunchThread [1 2 3]}
-
-
-
-
-
-
-
-
-
-
-
-
-
 declare
-
 fun{ManhattanDistance Position1 Position2}
     if(Position1 == nil orelse Position2 == nil) then nil
     else
         {Abs Position1.x-Position2.x} + {Abs Position1.y-Position2.y}
     end
 end
-%-----
-fun{IsDamageableByMine EnemyPosition Position }
-    ManDistance in
-    ManDistance = {ManhattanDistance Position EnemyPosition}
-    if(ManDistance < 2) then
-        true
+
+fun{Get L I}
+    case L
+    of nil then nil
+    [] H|T then 
+            if(I ==1) then H 
+            else
+                {Get T I-1}
+            end
     else
-        false
+        nil
     end
 end
+    
+fun{PositionMissile State}
 
-fun{CanDamageEnemy L Enemies}
-    fun{RecursiveCanDamageEnemy L Enemy}
-        case L
-        of pt(x:X y:Y)| T then
-            %if(Enemy.position == pt(x:X y:Y)) then % Achanger cette condition
-            if( {IsDamageableByMine Enemy.position pt(x:X y:Y)}) then
-                pt(x:X y:Y)
+    fun{Increment Position Min Max} 
+        case Position
+        of pt(x:0 y:Y) then
+            if(Min =< Max) then
+                pt(x:Min y:Y) | {Increment Position Min+1 Max}
             else
-                {RecursiveCanDamageEnemy T Enemy}
+                nil
+            end
+        [] pt(x:X y:0) then
+            if(Min =<Max) then
+                pt(x:X y:Min) |{Increment Position Min+1 Max}
+            else
+                nil
             end
         else
-            false
+            nil
+        end
+    end  
+
+    fun{TooClose L State} 
+        case L
+        of H|T then
+            if( {ManhattanDistance H State.position} > 1 andthen {ManhattanDistance H State.position} >1 )then %andthen {IsPositionOnMap H} ) then
+                H|{TooClose T State}
+            else
+                {TooClose T State}
+            end
+        else
+            nil
+        end
+    end 
+
+    fun{GetRandomPosition L}
+        fun{Length L Acc}
+            case L 
+            of H|T then {Length T Acc+1}
+            else
+                Acc
+            end
+        end
+    in  
+        {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+    end
+
+    fun{RecursivePositionMissile List State}
+        case List              
+        of enemy(id:I position: P)|T then
+            case P 
+            of pt(x:0 y:0) then
+                {RecursivePositionMissile T State}
+
+            [] pt(x:0 y:Y) then
+                local L1 L2 DeltaX DeltaY MinX MaxX in
+                    DeltaY = {Abs State.position.y - Y} 
+                    DeltaX = 4 - DeltaY 
+
+                    if(DeltaX<0) then 
+                        {RecursivePositionMissile T State}
+                    else
+                        
+                        MinX = State.position.x - DeltaX
+                        MaxX = State.position.x + DeltaX
+
+                        L1 = {Increment pt(x:0 y:Y) MinX MaxX }
+                        L2 = {TooClose L1 State}
+                        {GetRandomPosition L2}
+                    end
+                end
+
+            []pt(x:X y:0) then
+                local L1 L2 DeltaX DeltaY MinY MaxY in
+                    DeltaX = {Abs State.position.x - X} 
+                    DeltaY = 4 - DeltaX 
+                    if(DeltaY <0) then
+                        {RecursivePositionMissile T State}
+                    else
+                        
+                        MinY = State.position.y - DeltaY
+                        MaxY = State.position.y + DeltaY
+
+                        L1 = {Increment pt(x:X y:0) MinY MaxY }
+                        L2 = {TooClose L1 State}
+                        {GetRandomPosition L2}
+                    end
+                end
+            else /* Les Deux sont connues */
+                P
+            end
+        else
+            null
         end
     end
+    
 in
-    case Enemies
-    of enemy(id:I position:P)|T then
-        R in 
-        R = {RecursiveCanDamageEnemy L enemy(id:I position:P)}
-        if(R == false) then
-            {CanDamageEnemy L T}
-        else 
-            R
-        end
-    else
-        false
-    end
+    {RecursivePositionMissile State.enemies State}
 end
-%Mines = [pt(x:1 y:1)  pt(x:2 y:2) pt(x:3 y:3) pt(x:4 y:4) pt(x:5 y:5)]
-
-%Enemies = [enemy(id:1 position:pt(x:3 y:4)) enemy(id:2 position:pt(x:2 y:1)) enemy(id:3 position:pt(x:3 y:1)) enemy(id:4 position:pt(x:4 y:2)) enemy(id:5 position:pt(x:5 y:1))]
-
-
-Mines = [pt(x:1 y:1)  pt(x:5 y:2) pt(x:2 y:1) pt(x:0 y:4) pt(x:5 y:5)]
-
-Enemies = [enemy(id:1 position:pt(x:3 y:4)) enemy(id:2 position: pt(x:2 y:2))]
-
-
-{Browse {CanDamageEnemy Mines Enemies}}
-
 
 declare
-ID = 1
-Color = rouge
-I = id(id:ID color:Color name:'JoeurBasic'#ID) 
-{Browse I.name}
+L = enemy(id:1 position:pt(x:0 y:0)) | enemy(id:2 position:pt(x:0 y:0)) | enemy(id:1 position:pt(x:3 y:0)) | nil
+State = state(position:pt(x:8 y:4) enemies: L)
+
+{Browse {PositionMissile State}}

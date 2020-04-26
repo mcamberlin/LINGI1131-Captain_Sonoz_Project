@@ -538,8 +538,7 @@ define
                 else
                     %5. the player want to move to a direction
                     {System.show '%5.'}
-                    %{Broadcast PLAYER_PORTS sayMove(ID Direction)}
-                    %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FAUDRAIT PAS FAIRE ce qui est au dessus justement ?
+                    {Broadcast PLAYER_PORTS sayMove(ID Direction)}
                     {Send GUIPORT movePlayer(ID Position)}
                     %6. the player charge an item
                     {System.show '%6.'}
@@ -590,8 +589,32 @@ define
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Simultaneous%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    fun{IsSomebodyThere ListPort}
 
-    proc{WhichFireItemSimu KindFire ID PortPlayer} 
+        fun{IsSomebody ListPort Acc}
+            case ListPort
+            of H|T then 
+                Answer in 
+                {Send H isDead(Answer)}
+                {Wait Answer}
+                if(Answer==true) then
+                    {IsSomebody T Acc}
+                else
+                    {IsSomebody T Acc+1}
+                end
+            else
+                Acc
+            end
+        end
+    in
+        if( {IsSomebody ListPort 0} >1 ) then
+            true
+        else
+            false
+        end
+    end
+
+    proc{WhichFireItemSimu KindFire ID  PortPlayer} 
         {System.show 'Debut WhichFireItem avec un ' #KindFire}
         case KindFire
         of missile(Position) then {MissileSimu Position ID}
@@ -852,11 +875,17 @@ define
 
 
     proc{InLoopSimultaneous PortPlayer}
-        Answer in 
+
+        Answer EndOfGame in 
+
+        EndOfGame = {IsSomebodyThere PLAYER_PORTS}
         {Send PortPlayer isDead(Answer)}
         {Wait Answer}
-
-        if(Answer==true) then 
+        
+        if(Answer==true orelse EndOfGame == false) then 
+            if(EndOfGame == false) then
+                {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
+            end
             skip %this is the end for this player ... :(
         else
 
@@ -940,8 +969,9 @@ in
     %Launch the game in the correct mode
     if(Input.isTurnByTurn) then
         {TurnByTurn}
+        {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
     else
         {Simultaneous}
     end
-     {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
+     
 end
