@@ -86,7 +86,8 @@ Enemies = [enemy(id:1 position:pt(x:3 y:4)) enemy(id:2 position: pt(x:2 y:2))]
 {Browse {CanDamageEnemy Mines Enemies}}
 
 
-
-
-
-
+declare
+ID = 1
+Color = rouge
+I = id(id:ID color:Color name:'JoeurBasic'#ID) 
+{Browse I.name}

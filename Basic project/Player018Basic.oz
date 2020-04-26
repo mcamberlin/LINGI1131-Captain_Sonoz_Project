@@ -46,7 +46,7 @@ in
     fun{InitPosition ID Position State} 
         ID = State.id
         Position = {RandomPosition} 
-        {AdjoinList State [position#Position lastPositions#[Position]]} %return le nouvel etat
+        {AdjoinList State [position#Position lastPositions#[Position]]}
     end
 
     /** Move
@@ -141,11 +141,12 @@ in
         {System.show 'la nouvelle position est : '#NewPosition}
 
         if(NewDirection == surface) then
-            NewState = {AdjoinList State [surface#true lastPositions#[NewPosition] ]} % reset the last positions visited since last surface phase
+            % reset the last positions visited since last surface phase
+            NewState = {AdjoinList State [surface#true lastPositions#[NewPosition] ]}
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
-            NewState %return
+            NewState
 
         elseif( {Not {IsPositionOnMap NewPosition} } ) then 
             {System.show 'The direction selected is outside the map'}
@@ -298,9 +299,7 @@ in
     /** FireItem
         ID = unbound; KindFire = unbound
         State = current state of the submarine
-        permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire
-        state(id:id(id:ID color:Color name:'name') position:pt(x:1 y:1) dive:false mine:0 missile:0 drone:0 sonar:0)
-        Comprend pas comment envoyer un item....
+        permet d'utiliser un item disponible. Lie ID et l'item utilsé à Kindfire        
     */
     fun{FireItem ID KindFire State}
         /* 
@@ -417,11 +416,7 @@ in
 
     */
     fun{SaySurface ID State}
-        if(State.surface) then 
-            {System.show 'the player has made surface'}
-        else 
-            {System.show 'The player is underwater'}
-        end
+        {System.show 'the player has made surface'}
         State
     end
 
@@ -538,7 +533,7 @@ in
                 NewState
             end
         else
-            Message = nil
+            Message = null
             State
         end
     end
@@ -831,7 +826,7 @@ in
         InitialState
     in
         {NewPort Stream Port}
-        InitialState = state(id: id(id:ID color:Color name:Name) 
+        InitialState = state(id: id(id:ID color:Color name:'JoueurBasic'#ID) 
                             position: pt(x:1 y:1) 
                             lastPositions: nil 
                             direction: east

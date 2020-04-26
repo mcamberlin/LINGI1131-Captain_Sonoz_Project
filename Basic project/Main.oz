@@ -1,10 +1,3 @@
-/* 
-Command in the terminal
-    Compiling
-        ozc -c Input.oz GUI.oz Main.oz Player018Basic.oz PlayerManager.oz
-    Executing
-        ozengine Main.ozf 
-*/
 functor
 import
     GUI
@@ -16,6 +9,8 @@ import
 define
     GUIPORT
     PLAYER_PORTS
+
+    /** ---------------------------- USEFUL FUNCTIONS ---------------------- */
 
     /**
     @pre
@@ -37,7 +32,7 @@ define
         end
     end
 
-    /**
+    /** Change
     @pre 
         L = list
         I = index
@@ -88,7 +83,12 @@ define
         {System.show 'nbPlayersAlive =  '#GameState.nbPlayersAlive}
         {PrintPlayer GameState.playersState} 
     end
-    
+    /** DisplayWinner
+            @pre 
+                PlayersState = liste de playerState
+            @post
+                Affiche un message pour indiquer le gagnant de la partie
+    */
     proc{DisplayWinner PlayersState}
         case PlayersState
         of H|T then 
@@ -101,10 +101,12 @@ define
                 {DisplayWinner T}
             end
         else
-            {System.show 'We cannot find the winner :('}
+            {System.show 'There is no winner. Several submarines sinks at the same time'}
         end
     end
 
+    /** ---------------------------- END useful functions ---------------------- */
+   
 
     /** CreateEachPlayer
     @pre 
@@ -139,6 +141,41 @@ define
     end
 
 
+    /** StartGame
+        @pre
+        @post 
+            Create a gameState representing the current state of the Game
+    */
+    fun{StartGameSimultaneous}
+        
+        /** StartPlayers
+        @pre
+        @post
+            Create a list of PlayerState representing the state of each player.
+            Their place in the list correspond to their ID
+        */
+        fun{StartPlayers NbPlayer Acc}
+            if(NbPlayer ==0) then
+                nil
+            else
+                NewPlayerState 
+                in
+                    NewPlayerState = playerState(
+                                                port: {Get PLAYER_PORTS Acc}
+                                                alive:true 
+                                                )
+                    NewPlayerState | {StartPlayers NbPlayer-1 Acc+1}
+            end
+        end
+
+    in
+        gameState(
+                    nbPlayersAlive: Input.nbPlayer
+                    playersState: {StartPlayers Input.nbPlayer 1}
+                    )
+    end
+
+
 
 
     /** StartGame
@@ -146,7 +183,7 @@ define
         @post 
             Create a gameState representing the current state of the Game
     */
-    fun{StartGame}
+    fun{StartGameTurnByTurn}
         
         /** StartPlayers
         @pre
@@ -211,14 +248,14 @@ define
     fun{Missile Position ID GameState}
         fun{RecursiveMissile ID PlayersState GameState Position}
             case PlayersState 
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
-                if(A == false) then
+            of H|T then
+                if(H.alive == false) then
                     /** The player is already dead */
                     {RecursiveMissile ID T GameState Position}
                 else
                     Message 
                     in
-                    {Send P sayMissileExplode(ID Position Message)}
+                    {Send H.port sayMissileExplode(ID Position Message)}
                     {Wait Message}
                     {System.show 'A missile has been launched and the message is '#Message}
 
@@ -267,12 +304,12 @@ define
     fun{Mine Position ID GameState}
         fun{RecursiveMine Position ID PlayersState GameState}
             case PlayersState
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then 
-                if(A == false) then
+            of H|T then 
+                if(H.alive == false) then
                     /** The player is already dead */
                     {RecursiveMine Position ID T GameState}
                 else
-                    {Send P sayMinePlaced(ID)}
+                    {Send H.port sayMinePlaced(ID)}
                     {RecursiveMine Position ID T GameState}
                 end
             else
@@ -302,15 +339,15 @@ define
         */
         fun{RecursiveSonar PlayersState PlayerState GameState}
             case PlayersState 
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then
-                if(A == false) then 
+            of H|T then
+                if(H.alive == false) then 
                     /** The player is already dead */
                     {RecursiveSonar T PlayerState GameState}
                 else
                     %A Sonar detection is occuring   
                     ID Answer 
                     in
-                    {Send P sayPassingSonar(ID Answer)}
+                    {Send H.port sayPassingSonar(ID Answer)}
                     {Wait ID} {Wait Answer}
 
                     case Answer
@@ -344,15 +381,15 @@ define
         */
         fun{RecursiveDrone KindFire PlayersState PlayerState GameState}
             case PlayersState
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T  then
-                if(A == false) then
+            of H| T  then
+                if(H.alive == false) then
                     /** The player is already dead */
                     {RecursiveDrone KindFire T PlayerState GameState}
                 else
                     %A Drone detection is occuring   
                     ID Answer 
                     in
-                    {Send P sayPassingDrone(KindFire ID Answer)}
+                    {Send H.port sayPassingDrone(KindFire ID Answer)}
                     {Wait ID} {Wait Answer}
                     {Send PlayerState.port sayAnswerDrone(ID Answer)}      
                     {RecursiveDrone KindFire T PlayerState GameState}  
@@ -375,13 +412,13 @@ define
      fun{ExplodeMine Mine ID NewPlayerState GameState}
         fun{RecursiveExplodeMine PlayersState GameState}
             case PlayersState
-            of playerState(port:P alive:A isAtSurface:IAS turnAtSurface:TAS) | T then 
-                if(A == false) then
+            of H | T then 
+                if(H.alive == false) then
                     /** The player is already dead */
                     {RecursiveExplodeMine T GameState}
                 else
                     Message in 
-                    {Send P sayMineExplode(ID Mine Message)}
+                    {Send H.port sayMineExplode(ID Mine Message)}
                     
                     {Wait Message}
                     
@@ -425,11 +462,10 @@ define
     end
 
 
-    /** #TreatGame
-    */
+
     proc{TurnByTurn}
         InitialState in
-        InitialState = {StartGame}
+        InitialState = {StartGameTurnByTurn}
         {InLoopTurnByTurn InitialState 1}
     end
 
@@ -447,15 +483,14 @@ define
 
             Index TestIndex CurrentPlayer in 
             TestIndex = I mod (Input.nbPlayer)
-            if TestIndex == 0 then Index = 3
+            if TestIndex == 0 then Index = Input.nbPlayer
             else
                 Index = TestIndex
             end
-            CurrentPlayer = {Get GameState.playersState Index}
-
-
+            
             {System.show 'Au tour' #I# 'pour le joueur : '#Index}
-            {System.show 'Etat du jeu : ' #GameState}
+
+            CurrentPlayer = {Get GameState.playersState Index}
             {System.show '     Etat du joueur actuel : ' #CurrentPlayer}
 
             %0. Si le joueur est deja mort
@@ -466,7 +501,7 @@ define
             
             %1                   
             elseif (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
-            %NOTE : pas sur que ca fonctionnne A DISCUTER car CurrentPlayer.turnAtSurface ne sera jamais a 0 :/
+            
                 NewPlayerState NewPlayersState NewGameState in
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
                 NewPlayersState = {Change GameState.playersState Index NewPlayerState }
@@ -475,7 +510,8 @@ define
                 {InLoopTurnByTurn NewGameState I+1}
 
             %2
-            elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then %si c'est le premier tour ou si le sous marin vient de plonger au tour d'avant 
+            %if it's the first round or the submarine is just going to dive on the previous round
+            elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then 
                 NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
                 in
                 {System.show '%2.'}
@@ -486,7 +522,7 @@ define
                 {System.show '%3.'}
                 {Send NewPlayerState.port move(ID Position Direction)}
                 {Wait ID} {Wait Position} {Wait Direction}
-                {System.show 'The State of the player is '#ID}
+                {System.show 'The State of the player is '#NewPlayerState}
                 if(Direction == surface) then
                     %4. the player want to go at surface 
                     {System.show '%4.'}
@@ -501,6 +537,7 @@ define
                     %5. the player want to move to a direction
                     {System.show '%5.'}
                     %{Broadcast PLAYER_PORTS sayMove(ID Direction)}
+                    %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FAUDRAIT PAS FAIRE ce qui est au dessus justement ?
                     {Send GUIPORT movePlayer(ID Position)}
                     %6. the player charge an item
                     {System.show '%6.'}
@@ -508,7 +545,9 @@ define
                     in
                     {Send NewPlayerState.port chargeItem(ID KindItem)}
                     {Wait ID} {Wait KindItem}
-                    {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
+                    if KindItem\=null then
+                        {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
+                    end
                     %7. the player fire the item
                     {System.show '%7.'}
                     local ID KindFire
@@ -540,14 +579,7 @@ define
                 {System.show 'probleme dans les conditions turnbyturn'}
                 skip
             end
-        else
-            /** DisplayWinner
-            @pre 
-                PlayersState = liste de playerState
-            @post
-                Affiche un message pour indiquer le gagnant de la partie
-            */
-            
+        else            
             {DisplayWinner GameState.playersState}
             {System.show 'EndGame'} 
         end
@@ -558,7 +590,7 @@ define
         proc{LaunchThread ListPlayerState}
             case ListPlayerState
             of PlayerState|T then 
-                thread {InLoopSimultaneous PlayerState 1} end
+                thread {InLoopSimultaneous PlayerState} end
                 {LaunchThread T}
             else
                 skip
@@ -567,14 +599,14 @@ define
         %We have to launch a thread for each player. And they have to play independently. 
         InitialState
         in
-        InitialState = {StartGame}
+        InitialState = {StartGameSimultaneous}
         {LaunchThread InitialState.playersState} %List of each playerState( port: {Get PLAYER_PORTS Acc} alive:true isAtSurface:true turnAtSurface:Input.turnSurface)
         
     end
 
 
 
-    proc{InLoopSimultaneous PlayerState I}
+    proc{InLoopSimultaneous PlayerState}
 
         {System.show 'L etat du jouer est : '#PlayerState}
 
@@ -583,26 +615,53 @@ define
         end
 
         %1. if first turn or surface ended -> send dive 
-        if I==1 then 
-            {Send PlayerState.port dive}
-        end
+        {Send PlayerState.port dive}
 
         %2. Simulate thinking 
         {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
         
 
         %3. Choose direction. If surface -> end turn, wait Input.turnSurface seconds and Gui is notified 
+        /* 
+        {Send PlayerState.port move(ID Position Direction)}
+        {Wait ID} {Wait Position} {Wait Direction}
+
+        if Direction==surface then 
+            {Send GUIPORT surface(ID)}
+            {Broadcast PLAYER_PORTS saySurface(ID)}
+            {Delay Input.turnSurface*1000}
+            {InLoopSimultaneous PlayerState I+1}
+        end
 
         %4. Broadcast the direction and also say too Gui
+        {Send GUIPORT movePlayer(ID Position)}
+        {Broadcast PLAYER_PORTS sayMove(ID Direction)}
 
         %5. Simulate thinking 
+        {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
+
 
         %6. Charge an item. Braodcast information if a weapon is ready 
+        ID KindItem IDFire KindFire GameStateFire GameStateMine
+        in
+        {Send NewPlayerState.port chargeItem(ID KindItem)}
+        {Wait ID} {Wait KindItem}
+        if KindItem \= null then
+            {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
+        end
 
         %7. Simulate thinking 
+        {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
 
         %8. Fire an item. Broadcast information if touched an ennemy
+        {Send NewPlayerState.port fireItem(IDFire KindFire)}
+        {Wait IDFire} {Wait KindFire}
+        {System.show 'KindFire is '#KindFire} 
 
+        %NOTE : plus besoin de GameState car tout se fait independamment. Plus besoin de retenir tout ce qu'il se passe pour les autres 
+        %Puisque le thread s arrete quand le joueur est mort 
+
+        */
         %9. Simulate thinking 
 
         %10. Explode a mine. Broadcast information if touched an ennemy
@@ -622,9 +681,8 @@ in
     %Launch the game in the correct mode
     if(Input.isTurnByTurn) then
         {TurnByTurn}
-        {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
     else
         {Simultaneous}
     end
-
+     {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
 end

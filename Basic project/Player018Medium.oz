@@ -14,13 +14,13 @@ define
     IsIsland
     RandomPosition
     ManhattanDistance
-    PositionMine 
-    PositionMissile
     IsOnMap
     IsPositionOnMap
     NearestEnemy
     IsReachableByMissile
     IsReachableByMine
+    PositionMine 
+    PositionMissile
 
     InitPosition
     Move
@@ -215,7 +215,6 @@ in
         case L
         of enemy(id:I position:P)|T then 
             DistX DistY in 
-
             DistX = {Abs P.x - State.position.x}
             DistY = {Abs P.y - State.position.y}
 
@@ -287,6 +286,71 @@ in
         end
     end
 
+        /**PositionMine 
+    @pre 
+        Position
+    @post
+        return a random position that is bounded by minDistanceMine and maxDistanceMine around Position
+
+        Arthur : poser la mine pres d'un enemi ou au le plus proche possible de lui
+    */
+    fun{PositionMine Position}
+        Pos XMine YMine DeltaX DeltaY CondX CondY in 
+        %Delta 
+        DeltaX = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        %Cond to know position or negative
+        if ({OS.rand} mod 2) == 1 then CondX = ~1
+        else
+            CondX=1
+        end
+        if ({OS.rand} mod 2) == 1 then CondY = ~1
+        else
+            CondY=1
+        end
+
+        XMine = Position.x + CondX * DeltaX
+        YMine = Position.y + CondY * DeltaY
+        Pos = pt(x:XMine y:YMine)
+        if {IsOnMap Pos.x Pos.y} andthen {Not {IsIsland Pos.x Pos.y Input.map} } then 
+            Pos
+        else 
+            {PositionMine Position}
+        end
+
+    end
+
+    /**PositionMissile
+        give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position
+
+        Arthur : idem que pour positionMine essayer de toucher l'ennemi le plus proche     
+    */
+    fun{PositionMissile Position}
+        Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
+        %Delta 
+        DeltaX = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        %Cond to know position or negative
+        if ({OS.rand} mod 2) == 1 then CondX = ~1
+        else
+            CondX=1
+        end
+        if ({OS.rand} mod 2) == 1 then CondY = ~1
+        else
+            CondY=1
+        end
+
+        XMissile = Position.x + CondX * DeltaX
+        YMissile = Position.y + CondY * DeltaY
+        Pos = pt(x:XMissile y:YMissile)
+        if {IsOnMap Pos.x Pos.y} then Pos
+        else 
+            {PositionMissile Position}
+        end
+
+    end
+
+
 
  /** ---------------------------- END useful functions ---------------------- */   
 
@@ -321,33 +385,74 @@ in
             return the direction to the nearest enemy
         */
         fun{SelectDirection State} 
-            I %ID of the nearest ennemy
+            I %ID of the nearest enemy
             Enemy
+            EnemyPosition
         in
-            I = {NearestEnemy State.ennemies 1 Input.nRow Input.nColumn State}
-            Enemy = {Get State.ennemies I}
-            
+            I = {NearestEnemy State.enemies State.enemies.1.id Input.nRow Input.nColumn State}
+            {System.show 'I = ' #I}
+            Enemy = {Get State.enemies I.id}
+            EnemyPosition = Enemy.position
+            {System.show 'EnemyPosition = ' #EnemyPosition}
 
-            if(Enemy.position.x > State.position.x) then south
-            elseif(Enemy.position.x < State.position.x) then north
-            elseif(Enemy.position.y > State.position.y) then east
-            elseif(Enemy.position.y < State.position.y) then west
-            elseif(Enemy.position.x ==  State.position.x) then
-                if(Enemy.position.y > State.position.y) then east
-                elseif(Enemy.position.y < State.position.y) then west
+            case EnemyPosition 
+            of pt(x:X y:Y) then
+
+                if(X == 0 andthen Y ==0) then
+                    {RandomDirection}
+
+                % if the submarine is at the same position as its enemy, then go to surface
+                elseif(X == State.position.x andthen Y == State.position.y) then
+                    surface     
+
+
+                %y-coordinate not known
+                elseif(X \=0 andthen Y == 0) then  
+                    if(X > State.position.x) then south
+                    elseif(X < State.position.x) then north
+                    else /*Enemy and player are on the same row*/
+                        
+                        %Select randomly between east and west
+                        I in
+                        I = {OS.rand} mod 2
+                        case I
+                        of 0 then east
+                        else
+                            west
+                        end
+                    end
+
+                %x-coordinate not known
+                elseif(X == 0 andthen Y \=0) then
+                    if(Y > State.position.y) then east
+                    elseif(Y < State.position.y) then west
+                    else /*Enemy and player are on the same column*/
+                        %select randomly between north and south
+                        I in
+                        I = {OS.rand} mod 2
+                        case I
+                        of 0 then north
+                        else
+                            south
+                        end
+                    end
+
+                %x-coordinate and y-coordinates are known
                 else
-                    % if the submarine is at the same position as its enemy, then go to surface
-                    surface
+                    if(X< State.position.x) then north
+                    elseif(X> State.position.x) then south
+                    else /*Enemy and player are on the same row*/
+                        if(Enemy.position.y > State.position.y) then east
+                        else 
+                            west
+                        end
+                    end
                 end
             else
-                if(Enemy.position.x > State.position.x) then south
-                elseif(Enemy.position.x < State.position.x) then north
-                else
-                    % if the submarine is at the same position as its enemy, then go to surface
-                    surface
-                end
+                {System.show 'This case should never occur'}
             end
         end
+
 
         /** NotAlreadyVisited
         @pre
@@ -376,25 +481,6 @@ in
                 {Contains State.lastPositions Position}
             end
         end
-
-        /** Last
-        @pre 
-            L = list
-        @post
-            return the last element of the list L
-        */
-        /* 
-        fun{Last L}
-            fun{RLast L Acc}
-                case L 
-                of nil then Acc
-                []H|T then {RLast T H}
-                end
-            end
-        in
-            {RLast L nil}
-        end
-        */
 
         /** RandomDirection
         @pre
@@ -434,18 +520,20 @@ in
                 NewPosition = pt(x:State.position.x y:(State.position.y-1))
             end
 
-            if( {Not {IsPositionOnMap NewPosition} } ) then 
-                {System.show 'The direction selected is outside the map'}
-                {System.show 'This case should never occur normally since the direction selected correspond to the direction of the nearest enemy'}
+            if(Direction == surface) then 
+                NewPosition
+            elseif( {Not {IsPositionOnMap NewPosition} } ) then 
+                {System.show 'The new direction would be outside the map'}
                 {GetNewPosition {RandomDirection} State}
 
             elseif {IsIsland NewPosition.x NewPosition.y Input.map} then
-                {System.show 'The direction selected correspond to an island'}
+                {System.show 'The direction would correspond to an island'}
                 {GetNewPosition {RandomDirection} State}
 
             elseif{IsAlreadyVisited NewPosition State} then
-                {System.show 'The direction selected correspond to a spot already visited'}
-                {GetNewPosition {RandomPosition} State}
+                {System.show 'The direction selected would correspond to a spot already visited'}
+                {GetNewPosition surface State}
+            
             else
                 NewPosition
             end
@@ -459,9 +547,9 @@ in
         {System.show 'la direction choisie pour Move est : ' #NewDirection}
 
         if(NewDirection == surface) then
-            NewState = {AdjoinList State [surface#true lastPositions#[NewPosition] ]} % reset the last positions visited since last surface phase
+            NewState = {AdjoinList State [surface#true lastPositions#[State.position] ]} % reset the last positions visited since last surface phase
             ID = State.id
-            Position = NewPosition
+            Position = State.position
             Direction = NewDirection
             NewState 
         else
@@ -614,7 +702,7 @@ in
         ID = unbound; KindFire = unbound
         State = current state of the submarine
     @post
-        Check if one ennemy is close enough to be hitten.
+        Check if one enemy is close enough to be hitten.
         if yes and an item is available then 
             fire and decreasing the specific weapon
             Bind ID and KindFire 
@@ -626,8 +714,8 @@ in
     in
 
         %Check if an enemy is close to you
-        EnemyID = {NearestEnemy State.enemies 1 Input.nRow Input.nColumn State}
-        Enemy = {Get State.ennemies EnemyID}
+        EnemyID = {NearestEnemy State.enemies State.enemies.1.id Input.nRow Input.nColumn State}
+        Enemy = {Get State.enemies EnemyID.id}
 
         %Check if a missile is available and an enemy is reachable
         if(State.weapons.missile > 0 andthen {IsReachableByMissile Enemy.position State} ) then
@@ -801,16 +889,48 @@ in
         ID = ID of the submarine
         Direction = NewDirection of the submarine
     @post
+        Update the position of the enemy that has changed direction in the list of enemies
         Announce to the others that the player with id ID has changed direction to Direction
-
-        Arthur : Il faut interpreter les msg pour tous les say
     */
     fun{SayMove ID Direction State}
-        {System.show 'Le joueur a changé de direction vers'#Direction}
-
-
-        
-        State
+        NewPosition NewEnemy NewEnemies NewState Enemy 
+    in
+        if(ID == State.id.id) then
+            {System.show 'the player has changed direction to ' #Direction}
+        else
+            case Direction
+            of surface then
+                State
+            [] north then 
+                NewPosition = pt(x:(State.position.x-1) y:State.position.y)
+                Enemy = {Get State.enemies ID.id}
+                NewEnemy = {AdjoinList Enemy [position#NewPosition]}
+                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewState = {AdjoinList State [enemies#NewEnemies]}
+                NewState
+            [] south then 
+                NewPosition = pt(x:(State.position.x+1) y:State.position.y)
+                Enemy = {Get State.enemies ID.id}
+                NewEnemy = {AdjoinList Enemy [position#NewPosition]}
+                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewState = {AdjoinList State [enemies#NewEnemies]}
+                NewState
+            [] east then 
+                NewPosition = pt(x:State.position.x y:(State.position.y+1))
+                Enemy = {Get State.enemies ID.id}
+                NewEnemy = {AdjoinList Enemy [position#NewPosition]}
+                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewState = {AdjoinList State [enemies#NewEnemies]}
+                NewState
+            else /* west*/
+                NewPosition = pt(x:State.position.x y:(State.position.y-1))
+                Enemy = {Get State.enemies ID.id}
+                NewEnemy = {AdjoinList Enemy [position#NewPosition]}
+                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewState = {AdjoinList State [enemies#NewEnemies]}
+                NewState
+            end
+        end
     end
 
 
@@ -822,11 +942,7 @@ in
 
     */
     fun{SaySurface ID State}
-        if(State.surface) then 
-            {System.show 'the player has made surface'}
-        else 
-            {System.show 'The player is underwater'}
-        end
+        {System.show 'the player has made surface'}
         State
     end
 
@@ -841,8 +957,7 @@ in
     fun{SayCharge ID KindItem State}
         if KindItem == null then {System.show 'the player cannot charge an item'}
         else
-            {System.show 'The player charged a'}
-            {System.show KindItem}
+            {System.show 'The player charged a' #KindItem}
         end
         State
     end
@@ -851,7 +966,6 @@ in
     */
     fun{SayMinePlaced ID State}
         {System.show 'A mine has been placed by the player : '#ID.id}
-        
         State
     end
 
@@ -943,7 +1057,7 @@ in
                 NewState
             end
         else
-            Message = nil
+            Message = null
             State
         end
     end
@@ -962,9 +1076,9 @@ in
         false otherwise
     */
     fun{SayPassingDrone Drone ID Answer State}
-        if(State.damage == Input.maxDamage) then %the submarine is already dead
+        if(State.damage >= Input.maxDamage) then %the submarine is already dead
             ID = nil
-            Answer = nil
+            Answer = false
             State
         else
             case Drone
@@ -1006,10 +1120,10 @@ in
     fun{SayAnswerDrone Drone ID Answer State}
         case Drone
         of drone(row X) then
+            % The submarine ID is located in row X
             if Answer then 
-                % The submarine ID is located in row X
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID}.position [x#X]}
+                NewPosition = {AdjoinList {Get State.enemies ID.id}.position [x#X]}
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
@@ -1023,9 +1137,8 @@ in
         [] drone(column Y) then 
             if Answer then 
                 % The submarine ID is located in column Y
-                % => Update lastPositionKnown
                 NewPosition NewEnemy NewEnemies NewState in
-                NewPosition = {AdjoinList {Get State.enemies ID}.position [y#Y]}
+                NewPosition = {AdjoinList {Get State.enemies ID.id}.position [y#Y]}
                 NewEnemy = enemy(id:ID position:NewPosition)
                 NewEnemies = {Change State.enemies ID NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
@@ -1058,7 +1171,7 @@ in
     in
         if(State.damage == Input.maxDamage) then %the submarine is already dead
             ID = nil
-            Answer = nil
+            Answer = null
             State
         else
             RandomPos = {RandomPosition}
@@ -1081,14 +1194,14 @@ in
         ID = ID of the submarine that answers
         Answer = pt(x:X y:Y) with only 1 coordinate correct
     @post
-        Update the position known of their ennemies according to the answer given.
+        Update the position known of their enemies according to the answer given.
     */
     fun{SayAnswerSonar ID Answer State}
-        {System.show 'The player ' #State.id.id ' has detected an enemy around the position ' #Answer# 'thanks to its sonar'}
+        {System.show 'The player ' #State.id.id# ' has detected an enemy around the position ' #Answer# 'thanks to its sonar'}
         case Answer
         of pt(x:X y:Y) then
             Enemy EnemyPosition in 
-            Enemy = {Get State.enemies ID}
+            Enemy = {Get State.enemies ID.id}
             EnemyPosition = Enemy.position
             
             % None coordinate was known before
@@ -1096,7 +1209,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {Change State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
             
@@ -1110,7 +1223,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:0)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {Change State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState
@@ -1121,7 +1234,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:0 y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {Change State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState            
@@ -1132,7 +1245,7 @@ in
                 NewPosition NewEnemy NewEnemies NewState in
                 NewPosition = position(x:X y:Y)
                 NewEnemy = enemy(id:ID position:NewPosition)
-                NewEnemies = {Change State.enemies ID NewEnemy}
+                NewEnemies = {Change State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 {System.show 'The player ' #State.id.id# ' thinks that the submarine ' #ID# ' is located at position '#NewPosition}
                 NewState                 
@@ -1157,76 +1270,9 @@ in
     /** SayDamageTaken 
     */
     fun {SayDamageTaken ID Damage LifeLeft State}
-        {System.show 'The player take a total damage of '#Damage}
-        {System.show 'His health point is '#LifeLeft}
+        {System.show 'The player take a total damage of '#Damage# '. His health point is '#LifeLeft}
         State        
     end
-
-
-    /**PositionMine 
-    @pre 
-        Position
-    @post
-        return a random position that is bounded by minDistanceMine and maxDistanceMine around Position
-
-        Arthur : poser la mine pres d'un enemi ou au le plus proche possible de lui
-    */
-    fun{PositionMine Position}
-        Pos XMine YMine DeltaX DeltaY CondX CondY in 
-        %Delta 
-        DeltaX = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
-        DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
-        %Cond to know position or negative
-        if ({OS.rand} mod 2) == 1 then CondX = ~1
-        else
-            CondX=1
-        end
-        if ({OS.rand} mod 2) == 1 then CondY = ~1
-        else
-            CondY=1
-        end
-
-        XMine = Position.x + CondX * DeltaX
-        YMine = Position.y + CondY * DeltaY
-        Pos = pt(x:XMine y:YMine)
-        if {IsOnMap Pos.x Pos.y} andthen {Not {IsIsland Pos.x Pos.y Input.map} } then 
-            Pos
-        else 
-            {PositionMine Position}
-        end
-
-    end
-
-    /**PositionMissile
-        give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position
-
-        Arthur : idem que pour positionMine essayer de toucher l'ennemi le plus proche     
-    */
-    fun{PositionMissile Position}
-        Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
-        %Delta 
-        DeltaX = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
-        DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
-        %Cond to know position or negative
-        if ({OS.rand} mod 2) == 1 then CondX = ~1
-        else
-            CondX=1
-        end
-        if ({OS.rand} mod 2) == 1 then CondY = ~1
-        else
-            CondY=1
-        end
-
-        XMissile = Position.x + CondX * DeltaX
-        YMissile = Position.y + CondY * DeltaY
-        Pos = pt(x:XMissile y:YMissile)
-        if {IsOnMap Pos.x Pos.y} then Pos
-        else 
-            {PositionMissile Position}
-        end
-
-    end
-
 
     /** StartPlayer
         @pre
@@ -1249,12 +1295,12 @@ in
             if(Nb==0) then
                 nil
             else
-                enemy(id: (Input.nbPlayer - Nb +1) x:0 y:0)| {CreateEnemies Nb-1}
+                enemy(id: (Input.nbPlayer - Nb +1) position: pt(x:0 y:0))| {CreateEnemies Nb-1}
             end
         end
     in
         {NewPort Stream Port}
-        InitialState = state(id: id(id:ID color:Color name:Name) 
+        InitialState = state(id: id(id:ID color:Color name:'JoueurMedium'#ID)
                             position: pt(x:1 y:1) 
                             lastPositions: nil 
                             direction: east
