@@ -161,7 +161,8 @@ define
                 NewPlayerState 
                 in
                     NewPlayerState = playerState(
-                                                port: {Get PLAYER_PORTS Acc} 
+                                                port: {Get PLAYER_PORTS Acc}
+                                                alive:true 
                                                 )
                     NewPlayerState | {StartPlayers NbPlayer-1 Acc+1}
             end
@@ -248,10 +249,7 @@ define
         fun{RecursiveMissile ID PlayersState GameState Position}
             case PlayersState 
             of H|T then
-                Answer in
-                {Send H.port isDead(Answer)}
-                {Wait Answer}
-                if(Answer == true) then
+                if(H.alive == false) then
                     /** The player is already dead */
                     {RecursiveMissile ID T GameState Position}
                 else
@@ -586,345 +584,94 @@ define
             {System.show 'EndGame'} 
         end
     end
-
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Simultaneous%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-    proc{WhichFireItemSimu KindFire ID PortPlayer} 
-        {System.show 'Debut WhichFireItem avec un ' #KindFire}
-        case KindFire
-        of missile(Position) then {MissileSimu Position ID}
-        [] mine(Position) then {MineSimu Position ID}
-        [] sonar then {SonarSimu PortPlayer}
-        [] drone(RowOrColumn Index) then {DroneSimu KindFire PortPlayer}
-        else
-            skip
-        end
-    end
-    
-    /** Missile
-    @pre 
-        Position = position of where the missile lands
-        ID = id of the of the player who decides to fire a missile
-        PlayerState = playerState() of the player who decides to fire a missile
-        GameState = current game state
-    @post
-        return the new current gameState()
-    */
-    proc{MissileSimu Position ID}
-        proc{RecursiveMissile ID Position ListPort}
-            case ListPort 
-            of H|T then
-                Answer Message  in
-                {Send H isDead(Answer)}
-                {Wait Answer}
-                if(Answer == true) then
-                    /** The player is already dead */
-                    {RecursiveMissile ID Position T}
-                else
-                    {Send H sayMissileExplode(ID Position Message)}
-                    {Wait Message}
-                    {System.show 'A missile has been launched and the message is '#Message}
-
-                    case Message
-                    of sayDeath(ID_Dead_Submarine) then 
-                        NewGameState NewPlayersState NewPlayerState
-                        in
-                        {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
-                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
-                        {System.show 'this player is removed of the party :'#ID.id}
-                        
-                        {RecursiveMissile ID Position T}
-                        
-                    [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
-                        {Broadcast PLAYER_PORTS sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft)}
-                        {Send GUIPORT lifeUpdate(ID_Damaged_Submarine LifeLeft)}
-
-                        {RecursiveMissile ID Position T}
-                    else
-                        {System.show 'Format of Message in Missile is not death or damage. The player is not touched'}
-                        {RecursiveMissile ID Position T}
-                    end
-                end
-            else
-                skip
-            end
-        end
-    in
-        {RecursiveMissile ID Position PLAYER_PORTS}
-    end
-
-    
-    /** Mine
-    @pre
-        Position = position of the mine
-        ID = ID of the placer of mines
-    @post
-        send the message sayMinePlaced() to everyone alive and the message putMine() to the GUI
-        return GameState
-    */
-    proc{MineSimu Position ID}
-        proc{RecursiveMine ID ListPort}
-            case ListPort
-            of H|T then 
-                Answer in
-                {Send H isDead(Answer)}
-                {Wait Answer}
-                if Answer==true then
-                    /** The player is already dead */
-                    {RecursiveMine ID T}
-                else
-                    {Send H sayMinePlaced(ID)}
-                    {RecursiveMine ID T}
-                end
-            else
-                skip
-            end
-        end
-    in
-        {Send GUIPORT putMine(ID Position)}
-        {System.show 'A mine has been place in the position' #Position}
-        {RecursiveMine ID PLAYER_PORTS}
-    end
-
-
-    /** Sonar
-    @pre 
-        PlayerState = playerState() of the player to decided to fire an item
-        GameState = current gameState()
-    @post 
-        send a sayPassingSonar message to all players alive
-        send the response to the player that send a sonar request
-        return the new state of the game
-    */
-    proc{SonarSimu PortPlayer}
-        /** 
-        @pre 
-            PlayersState = liste de playerState
-        */
-        proc{RecursiveSonar ListPort PortPlayer}
-            case ListPort 
-            of H|T then
-                Answer in
-                {Send H isDead(Answer)}
-                {Wait Answer}
-
-                if(Answer==true) then 
-                    /** The player is already dead */
-                    {RecursiveSonar T PortPlayer}
-                else
-                    %A Sonar detection is occuring   
-                    local ID Answer 
-                    in
-                        {Send H sayPassingSonar(ID Answer)}
-                        {Wait ID} {Wait Answer}
-
-                        case Answer
-                        of pt(x:X y:Y) then
-                                %Send a message to the emitter of the sonar the position returned by the other players
-                                {Send PortPlayer sayAnswerSonar(ID Answer)}      
-                                {RecursiveSonar T PortPlayer}                  
-                        else
-                            {System.show 'Format of Message in Sonar not understood (not a sonar)'}
-                            {RecursiveSonar T PortPlayer}
-                        end
-                    end
-                end
-            else
-                skip
-            end
-        end
-    in
-        {RecursiveSonar PLAYER_PORTS PortPlayer}
-    end
-
-    /** Drone
-    @pre
-        KindFire = <Drone>
-        PlayerState = playerState() of the player to decided to fire an item
-        GameState = current gameState()
-    */
-    proc{DroneSimu KindFire PortPlayer}
-        proc{RecursiveDrone KindFire ListPort PortPlayer}
-            case ListPort
-            of H|T  then
-                Answer in
-                {Send H isDead(Answer)}
-                {Wait Answer}
-
-                if(Answer==true) then 
-                    /** The player is already dead */
-                    {RecursiveDrone KindFire T PortPlayer}
-                else
-                    %A Drone detection is occuring  
-                    local ID Answer 
-                    in
-                        {Send H sayPassingDrone(KindFire ID Answer)}
-                        {Wait ID} {Wait Answer}
-                        {Send PortPlayer sayAnswerDrone(ID Answer)}      
-                        {RecursiveDrone KindFire T PortPlayer}  
-                    end
-                end
-            else
-                skip
-            end
-        end
-    in
-        {RecursiveDrone KindFire PLAYER_PORTS PortPlayer}
-    end
-
-
-    /** ExplodeMine
-        @pre:
-        
-        @post: return a new GameState
-
-     */
-     proc{ExplodeMineSimu Mine ID PortPlayer}
-        proc{RecursiveExplodeMine Mine ID ListPort PortPlayer}
-            case ListPort
-            of H|T  then
-                Answer Message in
-                {Send H isDead(Answer)}
-                {Wait Answer}
-
-                if(Answer==true) then 
-                    /** The player is already dead */
-                    {RecursiveExplodeMine Mine ID T PortPlayer}
-                else 
-                    {Send H sayMineExplode(ID Mine Message)}
-                    
-                    {Wait Message}
-                    
-                    {System.show 'The Message in ExplodeMine is :'#Message}
-
-                    case Message 
-                    of sayDeath(ID_Dead_Submarine) then 
-
-                        {Broadcast PLAYER_PORTS sayDeath(ID_Dead_Submarine)}
-                        {Send GUIPORT removePlayer(ID_Dead_Submarine)}
-                        {RecursiveExplodeMine Mine ID T PortPlayer}
-
-                    [] sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft) then
-                        {Broadcast PLAYER_PORTS sayDamageTaken(ID_Damaged_Submarine Damage LifeLeft)}
-                        {Send GUIPORT lifeUpdate(ID_Damaged_Submarine LifeLeft)}
-
-                        {RecursiveExplodeMine Mine ID T PortPlayer}
-                    else
-                        {System.show 'Format of Message not sayDamage or sayDeath in ExplodeMine. The player '#ID.id#' is not touched'}
-                        {RecursiveExplodeMine Mine ID T PortPlayer}
-                    end
-                end
-            else
-                skip
-            end
-        end
-    in
-        if Mine == null then skip
-        else
-            {RecursiveExplodeMine Mine ID PLAYER_PORTS PortPlayer}
-            {Send GUIPORT removeMine(ID Mine)}
-            skip
-        end
-    end
-
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 
     proc{Simultaneous}
-        proc{LaunchThread ListPort}
-            case ListPort
-            of Port|T then 
-                thread {InLoopSimultaneous Port} end
+        proc{LaunchThread ListPlayerState}
+            case ListPlayerState
+            of PlayerState|T then 
+                thread {InLoopSimultaneous PlayerState} end
                 {LaunchThread T}
             else
                 skip
             end
         end
-        in
         %We have to launch a thread for each player. And they have to play independently. 
-        {LaunchThread PLAYER_PORTS} %List of each Port
+        InitialState
+        in
+        InitialState = {StartGameSimultaneous}
+        {LaunchThread InitialState.playersState} %List of each playerState( port: {Get PLAYER_PORTS Acc} alive:true isAtSurface:true turnAtSurface:Input.turnSurface)
         
     end
 
 
 
-    proc{InLoopSimultaneous PortPlayer}
-        Answer in 
-        {Send PortPlayer isDead(Answer)}
-        {Wait Answer}
+    proc{InLoopSimultaneous PlayerState}
 
-        if(Answer==true) then 
+        {System.show 'L etat du jouer est : '#PlayerState}
+
+        if(PlayerState.alive==false) then 
             skip %this is the end for this player ... :(
+        end
+
+        %1. if first turn or surface ended -> send dive 
+        {Send PlayerState.port dive}
+
+        %2. Simulate thinking 
+        {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
+        
+
+        %3. Choose direction. 
+        ID Position Direction in
+        {Send PlayerState.port move(ID Position Direction)}
+        {Wait ID} {Wait Position} {Wait Direction}
+
+        %4. If surface -> end turn, wait Input.turnSurface seconds and Gui is notified 
+        if Direction==surface then 
+            {Send GUIPORT surface(ID)}
+            {Broadcast PLAYER_PORTS saySurface(ID)}
+            {Delay Input.turnSurface*1000}
+            {InLoopSimultaneous PlayerState}
         else
 
-            %1. if first turn or surface ended -> send dive 
-            {Send PortPlayer dive}
+            %5. Broadcast the direction and also say too Gui
+            {Send GUIPORT movePlayer(ID Position)}
+            {Broadcast PLAYER_PORTS sayMove(ID Direction)}
 
-            %2. Simulate thinking 
+            %6. Simulate thinking 
             {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
-            
-
-            %3. Choose direction. 
-            ID Position Direction in
-            {Send PortPlayer move(ID Position Direction)}
-            {Wait ID} {Wait Position} {Wait Direction}
-
-            %4. If surface -> end turn, wait Input.turnSurface seconds and Gui is notified 
-            if Direction==surface then 
-                {Send GUIPORT surface(ID)}
-                {Broadcast PLAYER_PORTS saySurface(ID)}
-                {Delay Input.turnSurface*1000}
-                {InLoopSimultaneous PortPlayer}
-            else
-
-                %5. Broadcast the direction and also say too Gui
-                {Send GUIPORT movePlayer(ID Position)}
-                {Broadcast PLAYER_PORTS sayMove(ID Direction)}
-
-                %6. Simulate thinking 
-                {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
 
 
-                %7. Charge an item. Braodcast information if a weapon is ready 
-                local ID KindItem %GameStateFire GameStateMine 
-                in
-                    {Send PortPlayer chargeItem(ID KindItem)}
-                    {Wait ID} {Wait KindItem}
-                    if KindItem \= null then
-                        {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
-                    end
+            %7. Charge an item. Braodcast information if a weapon is ready 
+            local ID KindItem %GameStateFire GameStateMine 
+            in
+                {Send NewPlayerState.port chargeItem(ID KindItem)}
+                {Wait ID} {Wait KindItem}
+                if KindItem \= null then
+                    {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
                 end
-
-                %8. Simulate thinking 
-                {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
-
-                %9. Fire an item. Broadcast information if touched an ennemy
-                local ID KindFire
-                in
-                    {Send PortPlayer fireItem(ID KindFire)}
-                    {Wait ID} {Wait KindFire}
-                    {System.show 'KindFire is '#KindFire} 
-                    {WhichFireItemSimu KindFire ID PortPlayer}
-                end
-
-                %10. Simulate thinking 
-                {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
-
-                %11. Explode a mine. Broadcast information if touched an ennemy
-                local ID Mine
-                in 
-                    {Send PortPlayer fireMine(ID Mine)}
-                    {Wait ID} {Wait Mine}
-                    {ExplodeMineSimu Mine ID PortPlayer}
-
-                end
-                %12. End of turn -> repeat
-                {InLoopSimultaneous PortPlayer}
-
             end
+
+            %8. Simulate thinking 
+            {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
+
+            %9. Fire an item. Broadcast information if touched an ennemy
+            local ID KindFire
+            in
+                {Send NewPlayerState.port fireItem(ID KindFire)}
+                {Wait ID} {Wait KindFire}
+                {System.show 'KindFire is '#KindFire} 
+            end
+
+            %NOTE : plus besoin de GameState car tout se fait independamment. Plus besoin de retenir tout ce qu'il se passe pour les autres 
+            %Puisque le thread s arrete quand le joueur est mort 
+
+            
+            %10. Simulate thinking 
+
+            %11. Explode a mine. Broadcast information if touched an ennemy
+
+            %12. End of turn -> repeat
         end
 
     end

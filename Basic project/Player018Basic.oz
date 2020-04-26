@@ -489,7 +489,7 @@ in
                 NewState
             end
         else %Distance >= 2
-            Message = nil
+            Message = null
             State
         end
     end
