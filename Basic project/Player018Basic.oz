@@ -414,7 +414,6 @@ in
         ID = Bound
         State
     @post
-
     */
     fun{SaySurface ID State}
         {System.show 'the player has made surface'}

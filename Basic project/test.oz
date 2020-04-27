@@ -1,38 +1,72 @@
 declare
-fun{ManhattanDistance Position1 Position2}
-    if(Position1 == nil orelse Position2 == nil) then nil
-    else
-        {Abs Position1.x-Position2.x} + {Abs Position1.y-Position2.y}
-    end
-end
-
-fun{ChangeEnemy L ID NewEnemy}
-    case L
-    of H|T then
-        if(H.id == ID) then 
-            NewEnemy|T
+/** IsIsland
+    X, Y = position on the map
+    if the point(X,Y) is an island then true    
+    else false
+*/
+fun{IsIsland X Y Map}
+    case Map
+    of H1|T1 then 
+        if(X ==1) then
+            case H1 
+            of H2|T2 then 
+                if(Y==1) then
+                    if(H2 == 1) then %Sur une ile
+                        true
+                    else
+                        false
+                    end
+                else
+                    {IsIsland X Y-1 T2|T1}
+                end
+            else
+                false
+            end
         else
-            H|{ChangeEnemy T ID NewEnemy}
-        end
-    else 
-        nil
-    end
-end
-
-
-fun{Remove L Item}
-    case L
-    of H|T then
-        if (H == Item)  then
-            {Remove T Item}
-        else
-            H|{Remove T Item}
+            {IsIsland X-1 Y T1}
         end
     else
-        nil
+        false
     end
 end
 
+/** IsOnMap
+@pre
+    (X, Y) coordonnates
+@post
+    true if the coordinate are on the map
+    false otherwise    
+*/
+fun{IsOnMap X Y}
+    if(X=<Input.nRow andthen X>0) then
+        if(Y=<Input.nColumn andthen Y>0) then
+            true
+        else
+            false
+        end
+    else
+        false
+    end
+end
+
+/** IsPositionOnMap
+@pre
+    Position
+@post
+    true if the Position is on the map
+    false otherwise    
+*/
+fun{IsPositionOnMap Position}
+    {IsOnMap Position.x Position.y}
+end
+
+/** Get
+@pre
+    L = list of elements
+    I = index of the element considering in the list
+@post
+    return the Index th element in the list
+    */
 fun{Get L I}
     case L
     of nil then nil
@@ -45,232 +79,229 @@ fun{Get L I}
         nil
     end
 end
-    
-fun{ExplodeMine State ?Enemy}
 
-    /** SameY
-    @pre 
-        Y = the y position to compare
-        List = list of mines
-    @post
-        return a list of mine that are on the column Y
-    */
-    fun{NearY Y List}
-        case List
-        of H|T then 
-            if(H.y == Y orelse H.y == Y-1 orelse H.y == Y+1) then
-                H|{NearY Y T}
+fun{Length L Acc}
+    case L 
+    of H|T then {Length T Acc+1}
+    else
+        Acc
+    end
+end
+
+/** IsAlreadyVisited
+@pre
+    Position
+    State
+@post
+    true if the Position has already been visited
+    false otherwise
+*/
+fun{IsAlreadyVisited Position State}
+    fun{Contains ListPositions Position}
+        case ListPositions
+        of nil then false
+        [] H|T then
+            if(H == Position) then true
             else
-                {NearY Y T}
+                {Contains T Position}
             end
         else
-            nil
+            false
         end
     end
+in
+    if State.lastPositions == nil then false 
+    else
+        {Contains State.lastPositions Position}
+    end
+end
 
-    /** SameX
+/** RandomDirection
+@pre
+@post 
+    return a random direction (east, west, north, south, surface)
+*/
+fun{RandomDirection}
+    NewDirection = {OS.rand} mod 5
+in
+    if(NewDirection == 0) then surface
+    elseif(NewDirection == 1) then east
+    elseif(NewDirection == 2) then north
+    elseif(NewDirection == 3) then west
+    else 
+        south
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+/** Move
+@pre
+    ID = unbound; Position = unbound; Direction = unbound
+    State = current state of the submarine
+@post
+
+*/ 
+fun{Move ID Position Direction State}
+
+    /** GetPositionFromDirection
     @pre 
-        X = the x position to compare
-        List = list of mines
+        Direction = the new direction selected for the submarine
     @post
-        return a list of mine that are on the row X
+        return the new Position according to the direction selected 
     */
-    fun{NearX X List}
-        case List
-        of H|T then 
-            if(H.x == X orelse H.x == X-1 orelse H.x == X+1) then
-                H|{NearX X T}
-            else
-                {NearX X T}
-            end
-        else
-            nil
+    fun{GetPositionFromDirection Direction State}
+        NewPosition in
+        case Direction 
+        of surface then 
+            NewPosition = State.position
+        [] north then 
+            NewPosition = pt(x:(State.position.x-1) y:State.position.y)
+        [] south then 
+            NewPosition = pt(x:(State.position.x+1) y:State.position.y)
+        [] east then 
+            NewPosition = pt(x:State.position.x y:(State.position.y+1))
+        else /* west*/
+            NewPosition = pt(x:State.position.x y:(State.position.y-1))
         end
+        NewPosition
     end
 
-    
-    /** ReachableByMine
-    @pre
-        EnemyPosition = presice position of the enemy
-        List = list of mines
+    /** DirectionAvailable
     @post
-        return a list mines able to damage the enemy located in EnemyPosition
+        return a list of Directions available to move there
     */
-    fun{ReachableByMine EnemyPosition List}
-        case List
+    fun{DirectionAvailable Directions State}
+        case Directions
         of H|T then
-            %Exploding the mine H can damage the enemy
-            if( {ManhattanDistance H EnemyPosition}  <2) then
-                H|{ReachableByMine EnemyPosition T}
+            Position in 
+            Position = {GetPositionFromDirection H State}
+            if( {Not {IsAlreadyVisited Position State}} andthen {IsOnMap Position} andthen {Not {IsIsland Position.x Position.y Input.map}} ) then
+                H | {DirectionAvailable T State}
             else
-                {ReachableByMine EnemyPosition T}
+                {DirectionAvailable T State}
             end
         else
             nil
         end
     end
 
-    /** TooClose
-    @pre 
-        List = list of mines
-    @post
-        return a list of mines where the mines able to damage ourself have been removed
-    */
-    fun{TooClose List State} 
-        case List
-        of H|T then
-            if( {ManhattanDistance H State.position} >1  ) then
-                H|{TooClose T State}
-            else
-                {TooClose T State}
-            end
-        else
-            nil
-        end
-    end 
-    
-    /** GetRandomMine
-    @pre 
-        L = list of mines
-    @post
-        return randomly a mine in L
-    */
-    fun{GetRandomMine L}
-        fun{Length L Acc}
-            case L 
-            of H|T then {Length T Acc+1}
-            else
-                Acc
-            end
-        end
-        Longueur
-    in  
-        Longueur = {Length L 0}
-        if(Longueur >0) then
-            {Get L (1+{OS.rand} mod ({Length L 0}) ) }
-        else
-            nil
-        end
-    end
-
-    /** RecursiveExplodeMine
+    /**GenerateEnemiesPosition
     @pre
-        List = list of enemies
-        State = state of the current player
-        Enemy = unbound
     @post
-        bound Enemy to the enemy supposed to be fired
-        return a position of mine to explode without damaging ourself 
+        return a list of known position of enemies
     */
-    fun{RecursiveExplodeMine List State ?Enemy }
-        case List              
-        of enemy(id:I position: P)|T then
-            case P 
+    fun{GenerateEnemiesPosition Enemies}
+        case Enemies
+        of enemy(id: I position:P)|T then
+            case P
             of pt(x:0 y:0) then
-                {RecursiveExplodeMine T State ?Enemy }
-            [] pt(x:0 y:Y) then
-                L1 L2 Mine in   
-
-                %1. return a list of mines in the column Y
-                L1 = {NearY Y State.mines}
-                {Browse 'L1'}
-                {Browse L1}
-                {Delay 3000}
-                %2. remove those that are too close of me
-                L2 = {TooClose L1 State}
-                {Browse 'L2'}
-                {Browse L2}
-                {Delay 3000}
-                %3. select randomly one to explode
-                Mine = {GetRandomMine L2}
-                {Browse 'Mine'}
-                {Browse Mine}
-                {Delay 3000}
-                
-                if(Mine == nil) then
-                    {RecursiveExplodeMine T State Enemy}
-                else
-                    %4. reset position of the enemy
-                    Enemy = enemy(id:I position: P)
-                    Mine                        
-                end
-
-            []pt(x:X y:0) then
-                L1 L2 Mine in 
-                
-                %1. return a list of mines in the row X
-                L1 = {NearX X State.mines}
-                %2. remove those that are too close of me 
-                L2 = {TooClose L1 State}
-                %3. select randomly one to explode
-                Mine = {GetRandomMine L2}                 
-                
-                if(Mine == nil) then
-                    {RecursiveExplodeMine T State Enemy}
-                else
-                    %4. reset position of the enemy
-                    Enemy = enemy(id:I position: P)
-                    Mine                        
-                end
-
-            else /** Both coordinates of the enemy are known */
-                L1 L2 Mine in 
-                %1. return a list of mines able to damage the Enemy
-                L1 = {ReachableByMine P State.mines}
-                %2. remove those that are too close of me 
-                L2 = {TooClose L1 State}
-                %3. select randomly one to explode
-                Mine = {GetRandomMine L2}                 
-                
-                if(Mine == nil) then
-                    {RecursiveExplodeMine T State Enemy}
-                else
-                    %4. reset position of the enemy
-                    Enemy = enemy(id:I position: P)
-                    Mine                        
-                end
-            end
+                {GenerateEnemiesPosition T}
+            []pt(x:X y:Y) then
+                P|{GenerateEnemiesPosition T}
+            else
+                nil
+            end  
         else
-            Enemy = null
-            null
+            nil
         end
     end
-    
-in
-    {RecursiveExplodeMine State.enemies State ?Enemy}
-end
 
-
-fun{FireMine ID Mine State}
-    TargetMine Enemy
-in
+    /** SelectDirection
+    @pre
+    @post
+        return one direction to an enemy
+    */
+    fun{SelectDirection EnemiesPosition DirectionsAvailable State}
         
-    TargetMine = {ExplodeMine State ?Enemy}
-    {Wait Enemy}
+        fun{RecursiveSelectDirection EnemiesPosition DAvailable State}
+            case EnemiesPosition
+            of E|T2 then
+                if( DAvailable == east andthen E.y \= 0 andthen E.y > State.position.y) then east
+                   
+                elseif(DAvailable == west andthen E.y \= 0 andthen E.y < State.position.y) then west
+                
+                elseif(DAvailable == north andthen E.x \= 0 andthen E.x < State.position.x) then north
 
-    if(TargetMine \= null ) then
-        NewEnemy NewEnemies NewMines NewState in 
-        NewEnemy = {AdjoinList Enemy [position# pt(x:0 y:0)]}
-        NewEnemies = {ChangeEnemy State.enemies Enemy.id NewEnemy}
-        NewMines = {Remove State.mines TargetMine}
-        NewState = {AdjoinList State [mines#NewMines enemies#NewEnemies]}
-        ID = State.id
-        Mine = TargetMine
-        NewState
-    else % None mine to place
-        Mine = null
-        ID = State.id
-        State
+                elseif(DAvailable == south andthen E.x \= 0 andthen E.x > State.position.x) then south
+
+                else
+                    {RecursiveSelectDirection T2 DAvailable State}
+                end
+            else
+                nil
+            end
+
+        end
+    in
+        case DirectionsAvailable
+        of H|T then
+            local R in
+                R = {RecursiveSelectDirection EnemiesPosition H State}
+                if(R == nil) then
+                    {SelectDirection EnemiesPosition T State}
+                else
+                    R
+                end
+            end
+        else 
+            nil
+        end 
+
     end
-end
+ 
+    DirectionsAvailable
+    EnemiesPosition
+    NewState
+in
 
+    DirectionsAvailable = {DirectionAvailable [north south east west] State}
+    
+    /* Aucune direction n'est possible => va a la surface */
+    if(DirectionsAvailable == nil) then 
+        % reset the last positions visited since last surface phase
+        Position = State.position
+        NewState = {AdjoinList State [lastPositions#[Position] ]}
+        ID = State.id
+        Direction = surface
+        NewState
 
+    else
+        EnemiesPosition = {GenerateEnemiesPosition State.enemies}
+        if(EnemiesPosition == nil) then
+            local Index in
+                Index = {OS.rand} mod {Length DirectionsAvailable 0}
+                Direction = {Get DirectionsAvailable Index+1}
+                Position = {GetPositionFromDirection Direction}
+                ID = State.id
+                NewState = {AdjoinList State [position#Position lastPositions#(Position|State.lastPositions) ]}
+                NewState
+            end
 
-declare
-M = pt(x:5 y:2) | pt(x:10 y:10) | pt(x:10 y:10) | pt(x:10 y:10) | nil
-L = enemy(id:1 position:pt(x:5 y:0)) | enemy(id:2 position:pt(x:0 y:1)) | enemy(id:1 position:pt(x:5 y:2)) | nil
-
-State = state(position:pt(x:8 y:4) enemies: L mines: M)
-local Enemy in
-{Browse {ExplodeMine State ?Enemy}}
+        else
+            local NewDirection in
+                NewDirection = {SelectDirection EnemiesPosition DirectionsAvailable State}
+                if(NewDirection == nil) then
+                    local Index in
+                        Index = {OS.rand} mod {Length DirectionsAvailable 0}
+                        Direction = {Get DirectionsAvailable Index+1}
+                        Position = {GetPositionFromDirection Direction}
+                        ID = State.id
+                        NewState = {AdjoinList State [position#Position lastPositions#(Position|State.lastPositions) ]}
+                        NewState
+                    end
+                else
+                    Direction = NewDirection
+                    Position = {GetPositionFromDirection Direction}
+                    ID = State.id
+                    NewState = {AdjoinList State [position#Position lastPositions#(Position|State.lastPositions) ]}
+                    NewState
+                end
+            end
+        end
+           
+    end
 end

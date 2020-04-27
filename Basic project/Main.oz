@@ -10,7 +10,7 @@ define
     GUIPORT
     PLAYER_PORTS
 
-    /** ---------------------------- USEFUL FUNCTIONS ---------------------- */
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% USEFUL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
     /**
     @pre
@@ -105,7 +105,7 @@ define
         end
     end
 
-    /** ---------------------------- END useful functions ---------------------- */
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END useful functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
    
 
     /** CreateEachPlayer
@@ -173,8 +173,6 @@ define
                     playersState: {StartPlayers Input.nbPlayer 1}
                     )
     end
-
-
 
 
     /** StartGame
@@ -411,7 +409,7 @@ define
         @post: return a new GameState
 
      */
-     fun{ExplodeMine Mine ID NewPlayerState GameState}
+    fun{ExplodeMine Mine ID NewPlayerState GameState}
         fun{RecursiveExplodeMine PlayersState GameState}
             case PlayersState
             of H | T then 
@@ -593,7 +591,7 @@ define
     end
 
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Simultaneous%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SIMULTANEOUS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     fun{IsSomebodyThere ListPort}
 
@@ -857,9 +855,6 @@ define
             skip
         end
     end
-
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 
     proc{Simultaneous}
@@ -964,6 +959,11 @@ define
 
     end
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END SIMULTANEOUS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 in
     {System.show '----------------------------------------------------- GAME LAUNCHED ------------------------------------------------'}
 
@@ -978,6 +978,5 @@ in
         {System.show '----------------------------------------------------- ENDGAME ------------------------------------------------'}
     else
         {Simultaneous}
-    end
-     
+    end    
 end
