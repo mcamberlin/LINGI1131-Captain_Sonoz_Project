@@ -18,9 +18,10 @@ define
     ManhattanDistance
     IsOnMap
     IsPositionOnMap
+
     NearestEnemy
-    IsReachableByMissile
-    IsReachableByMine
+    ExplodeMine
+
     PositionMine 
     PositionMissile
 
@@ -93,7 +94,6 @@ in
             nil
         end
     end
-
 
 
     /** Change
@@ -296,25 +296,8 @@ in
         end
     end
 
-    /** IsReachableByMine
-    @pre
-        State = State of the current player
-        EnemyPosition = position of the nearest enemy
-    @post
-        return true if the enemy is reachable by a mine
-        false others
-    */
-    fun{IsReachableByMine EnemyPosition State}
-        ManDistance in
-        ManDistance = {ManhattanDistance State.position EnemyPosition}
-        if(ManDistance =< Input.maxDistanceMine andthen ManDistance >= Input.minDistanceMine) then
-            true
-        else
-            false
-        end
-    end
 
-        /**PositionMine 
+    /**PositionMine 
     @pre 
         Position
     @post
@@ -346,16 +329,210 @@ in
 
     end
 
+
+    /** ExplodeMine 
+    @pre 
+        State = current state of the player
+        Enemy = unbound = enemy targeted
+    @post
+        return the position of the mine to explode without damaging ourself 
+        null if no mines can damage an enemy
+    */
+    fun{ExplodeMine State ?Enemy}
+
+        /** SameY
+        @pre 
+            Y = the y position to compare
+            List = list of mines
+        @post
+            return a list of mine that are on the column Y
+        */
+        fun{NearY Y List}
+            case List
+            of H|T then 
+                if(H.y == Y orelse H.y == Y-1 orelse H.y == Y+1) then
+                    H|{NearY Y T}
+                else
+                    {NearY Y T}
+                end
+            else
+                nil
+            end
+        end
+
+        /** SameX
+        @pre 
+            X = the x position to compare
+            List = list of mines
+        @post
+            return a list of mine that are on the row X
+        */
+        fun{NearX X List}
+            case List
+            of H|T then 
+                if(H.x == X orelse H.x == X-1 orelse H.x == X+1) then
+                    H|{NearX X T}
+                else
+                    {NearX X T}
+                end
+            else
+                nil
+            end
+        end
+
+        
+        /** ReachableByMine
+        @pre
+            EnemyPosition = presice position of the enemy
+            List = list of mines
+        @post
+            return a list mines able to damage the enemy located in EnemyPosition
+        */
+        fun{ReachableByMine EnemyPosition List}
+            case List
+            of H|T then
+                %Exploding the mine H can damage the enemy
+                if( {ManhattanDistance H EnemyPosition}  <2) then
+                    H|{ReachableByMine EnemyPosition T}
+                else
+                    {ReachableByMine EnemyPosition T}
+                end
+            else
+                nil
+            end
+        end
+  
+        /** TooClose
+        @pre 
+            List = list of mines
+        @post
+            return a list of mines where the mines able to damage ourself have been removed
+        */
+        fun{TooClose List State} 
+            case List
+            of H|T then
+                if( {ManhattanDistance H State.position} >1  ) then
+                    H|{TooClose T State}
+                else
+                    {TooClose T State}
+                end
+            else
+                nil
+            end
+        end 
+        
+        /** GetRandomMine
+        @pre 
+            L = list of mines
+        @post
+            return randomly a mine in L
+        */
+        fun{GetRandomMine L}
+            fun{Length L Acc}
+                case L 
+                of H|T then {Length T Acc+1}
+                else
+                    Acc
+                end
+            end
+            Longueur
+        in  
+            Longueur = {Length L 0}
+            if(Longueur >0) then
+                {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+            else
+                nil
+            end
+        end
+        /** RecursiveExplodeMine
+        @pre
+            List = list of enemies
+            State = state of the current player
+            Enemy = unbound
+        @post
+            bound Enemy to the enemy supposed to be fired
+            return a position of mine to explode without damaging ourself 
+        */
+        fun{RecursiveExplodeMine List State ?Enemy }
+            case List              
+            of enemy(id:I position: P)|T then
+                case P 
+                of pt(x:0 y:0) then
+                    {RecursiveExplodeMine T State ?Enemy }
+                [] pt(x:0 y:Y) then
+                    L1 L2 Mine in   
+
+                    %1. return a list of mines in the column Y
+                    L1 = {NearY Y State.mines}
+                    %2. remove those that are too close of me
+                    L2 = {TooClose L1 State}
+                    %3. select randomly one to explode
+                    Mine = {GetRandomMine L2}
+                    
+                    if(Mine == nil) then
+                        {RecursiveExplodeMine T State Enemy}
+                    else
+                        %4. reset position of the enemy
+                        Enemy = enemy(id:I position: P)
+                        Mine                        
+                    end
+
+                []pt(x:X y:0) then
+                    L1 L2 Mine in 
+                    
+                    %1. return a list of mines in the row X
+                    L1 = {NearX X State.mines}
+                    %2. remove those that are too close of me 
+                    L2 = {TooClose L1 State}
+                    %3. select randomly one to explode
+                    Mine = {GetRandomMine L2}                 
+                    
+                    if(Mine == nil) then
+                        {RecursiveExplodeMine T State Enemy}
+                    else
+                        %4. reset position of the enemy
+                        Enemy = enemy(id:I position: P)
+                        Mine                        
+                    end
+
+                else /** Both coordinates of the enemy are known */
+                    L1 L2 Mine in 
+                    %1. return a list of mines able to damage the Enemy
+                    L1 = {ReachableByMine P State.mines}
+                    %2. remove those that are too close of me 
+                    L2 = {TooClose L1 State}
+                    %3. select randomly one to explode
+                    Mine = {GetRandomMine L2}                 
+                    
+                    if(Mine == nil) then
+                        {RecursiveExplodeMine T State Enemy}
+                    else
+                        %4. reset position of the enemy
+                        Enemy = enemy(id:I position: P)
+                        Mine                        
+                    end
+                end
+            else
+                Enemy = null
+                null
+            end
+        end
+        
+    in
+        {RecursiveExplodeMine State.enemies State ?Enemy}
+    end
+
     /**PositionMissile
     @pre
-        State
+        State = current state of the player
+        Enemy = unbound = enemy targeted
     @post 
         Position approximative d'un ennemi atteignable sans pour autant nous atteindre nous
         null si aucun ennemi n'est dans une position atteignable     
     */
     fun{PositionMissile State ?Enemy}
 
-        %1. retourner une liste de position ou on peut tirer un missile
+        %1. retourner une liste de position ou peut se trouver l'ennemi
         /** Increment
         @pre 
             Position = position présumée de l'ennemi
@@ -389,11 +566,11 @@ in
         @pre 
             L = list of positions where we can fire a missile
         @post
-            L = list of positions where positions are not to close  */
+            L = list of positions where positions are not too close  */
         fun{TooClose L State} 
             case L
             of H|T then
-                if( {ManhattanDistance H State.position} > 1 andthen {ManhattanDistance H State.position} >1  andthen {IsPositionOnMap H} andthen {Not {IsIsland H.x H.y Input.map}} ) then
+                if( {ManhattanDistance H State.position} > Input.minDistanceMissile andthen {ManhattanDistance H State.position} >1  andthen {IsPositionOnMap H} andthen {Not {IsIsland H.x H.y Input.map}} ) then
                     H|{TooClose T State}
                 else
                     {TooClose T State}
@@ -415,7 +592,15 @@ in
         in  
             {Get L (1+{OS.rand} mod ({Length L 0}) ) }
         end
-
+        /** RecursivePositionMissile
+        @pre
+            List = list of enemies
+            State = state of the current player
+            Enemy = unbound
+        @post
+            bound Enemy to the enemy supposed to be fired
+            return a reachable position where fired a missile without damaging ourself 
+        */
         fun{RecursivePositionMissile List State ?Enemy }
             case List              
             of enemy(id:I position: P)|T then
@@ -462,8 +647,13 @@ in
                         end
                     end
                 else /* Les Deux sont connues */
-                    Enemy = enemy(id:I position: P)
-                    P  
+                    if( {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Input.map}} ) then
+                        Enemy = enemy(id:I position: P)
+                        P  
+                    else
+                        Enemy = null
+                        null
+                    end
                 end
             else
                 Enemy = null
@@ -719,7 +909,7 @@ in
 
         if(NewDirection == surface) then
             % reset the last positions visited since last surface phase
-            NewState = {AdjoinList State [surface#true lastPositions#[NewPosition] ]}
+            NewState = {AdjoinList State [lastPositions#[NewPosition] ]}
             ID = State.id
             Position = NewPosition
             Direction = NewDirection
@@ -738,7 +928,6 @@ in
             {Move ID Position Direction State}
 
         else
-
             NewState = {AdjoinList State [position#NewPosition lastPositions#(NewPosition|State.lastPositions)]}  /*Add the NewPosition To The position visited*/
             ID = State.id
             Position = NewPosition
@@ -756,11 +945,7 @@ in
         Update State
     */
     fun{Dive State}
-        if(State \= nil) then
-            {AdjoinList State [dive#true]}
-        else
-            nil
-        end
+        State
     end
 
     /** ChargeItem
@@ -899,7 +1084,6 @@ in
 
         TargetMissile = {PositionMissile State ?Enemy}
         {Wait Enemy}
-        {System.show 'ENEMYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY : ' #Enemy}
 
         %Check if a drone is available 
         if State.weapons.drone > 0 then
@@ -959,85 +1143,52 @@ in
         ID = unbound
         Mine = unbound
     @post
-        if a mine is ready to be fired, we explode it only if it can damage an enemy
+        
     */
     fun{FireMine ID Mine State}
-
-        /** IsDamageableByMine
-        @pre 
-            EnemyPosition = enemy position
-            MinePosition = mine position
-        @post 
-            return true if exploding a the mine in position MinePosition will cause damage to enemy
-            false others
-        */
-        fun{IsDamageableByMine EnemyPosition MinePosition }
-            ManDistance 
-        in
-            ManDistance = {ManhattanDistance EnemyPosition MinePosition}
-            if(ManDistance < 2) then
-                true
-            else
-                false
-            end
-        end
-
-        /** CanDamageEnemy
-        @pre
-            L = list of mines
-            Enemy = enemy(id: I position:pt(x:X y:Y))
-        @post
-            return the position of the mine to explode
-            if none mine can damage an enemy, return false
-        */
-        fun{CanDamageEnemy L Enemies}
-            fun{RecursiveCanDamageEnemy L Enemy}
-                case L
-                of pt(x:X y:Y)| T then
-                    if( {IsDamageableByMine Enemy.position pt(x:X y:Y)}) then
-                        pt(x:X y:Y)
-                    else
-                        {RecursiveCanDamageEnemy T Enemy}
-                    end
-                else
-                    false
-                end
-            end
-        in
-            case Enemies
-            of enemy(id:I position:P)|T then
-                R in 
-                R = {RecursiveCanDamageEnemy L enemy(id:I position:P)}
-                if(R == false) then
-                    {CanDamageEnemy L T}
-                else 
-                    R
-                end
-            else
-                false
-            end
-        end
-
-        Fire NewMines NewState 
-        
+        TargetMine Enemy
     in
-        Fire = {CanDamageEnemy State.mines State.enemies} 
-        %Fire is either false or pt(x:X y:Y) the position of the mine to explode
+           
+        TargetMine = {ExplodeMine State ?Enemy}
+        {Wait Enemy}
 
-        % No mine can cause a damage to enemy
-        if(Fire == false) then 
+        if(TargetMine \= null ) then
+            NewEnemy NewEnemies NewMines NewState in 
+            NewEnemy = {AdjoinList Enemy [position# pt(x:0 y:0)]}
+            NewEnemies = {ChangeEnemy State.enemies Enemy.id NewEnemy}
+            NewMines = {Remove State.mines TargetMine}
+            NewState = {AdjoinList State [mines#NewMines enemies#NewEnemies]}
+            ID = State.id
+            Mine = TargetMine
+            NewState
+        else % None mine to place
             Mine = null
             ID = State.id
             State
-        
-        %There is a mine near the enemy that can damage him
-        else
-            NewMines = {Remove State.mines Fire} %remove the mine exploded from the list of mines
-            Mine = Fire
-            ID = State.id
-            NewState = {AdjoinList State [mines#NewMines]}
-            NewState
         end
+
+        /*
+        Fire NewState in
+        case State.mines 
+        of M|T then
+            Fire = {OS.rand} mod 2
+            if Fire == 0 then %The first mine of the list explodes
+                Mine = M
+                ID = State.id
+                NewState = {AdjoinList State [mines#T]}
+                NewState
+            else %Do not want to explode a mine
+                Mine = null
+                ID = State.id
+                State
+            end
+        else % None mine to place
+            Mine = null
+            ID = State.id
+            State
+        end
+        */
+
     end
 
 
@@ -1059,10 +1210,13 @@ in
         Announce to the others that the player with id ID has changed direction to Direction
     */
     fun{SayMove ID Direction State}
+        
         NewPosition NewEnemy NewEnemies NewState Enemy 
     in
-        if(ID == State.id) then
-            {System.show 'the player has changed direction to ' #Direction}
+    
+        if(ID.id == State.id.id) then
+            {System.show 'SayMove de soi-meme' #Direction}
+            State
         else
             case Direction
             of surface then
@@ -1088,7 +1242,7 @@ in
                 NewEnemies = {ChangeEnemy State.enemies ID.id NewEnemy}
                 NewState = {AdjoinList State [enemies#NewEnemies]}
                 NewState
-            else /* west*/
+            else % west
                 NewPosition = pt(x:State.position.x y:(State.position.y-1))
                 Enemy = {GetEnemy State.enemies ID.id}
                 NewEnemy = {AdjoinList Enemy [position#NewPosition]}
@@ -1097,6 +1251,12 @@ in
                 NewState
             end
         end
+        
+        /* 
+        {System.show 'Le joueur a changé de direction vers'#Direction}
+        State
+         */
+        
     end
 
 
@@ -1121,7 +1281,8 @@ in
         Announce to the others that the player with id ID has charged the item KindItem
     */
     fun{SayCharge ID KindItem State}
-        if KindItem == null then {System.show 'the player cannot charge an item'}
+        if KindItem == null then 
+            {System.show 'the player cannot charge an item'}
         else
             {System.show 'The player charged a' #KindItem}
         end
@@ -1160,7 +1321,7 @@ in
             NewDamage = State.damage +2 
             if NewDamage >= Input.maxDamage then /*Dead */
                 Message = sayDeath(State.id)
-                NewState = {AdjoinList State [damage#NewDamage surface#true]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 NewState
             else
                 NewState = {AdjoinList State [damage#NewDamage]}
@@ -1171,7 +1332,7 @@ in
             NewDamage = State.damage +1 
             if NewDamage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(State.id)
-                NewState = {AdjoinList State [damage#NewDamage surface#true]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 NewState
             else
                 NewState = {AdjoinList State [damage#NewDamage]}
@@ -1204,7 +1365,7 @@ in
             NewDamage = State.damage +2 
             if NewDamage >= Input.maxDamage then /*Dead */
                 Message = sayDeath(State.id)
-                NewState = {AdjoinList State [damage#NewDamage surface#true]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 NewState
             else
                 NewState = {AdjoinList State [damage#NewDamage]}
@@ -1215,7 +1376,7 @@ in
             NewDamage = State.damage +1 
             if NewDamage >= Input.maxDamage then  /*Dead */
                 Message = sayDeath(State.id)
-                NewState = {AdjoinList State [damage#NewDamage surface#true]}
+                NewState = {AdjoinList State [damage#NewDamage]}
                 NewState
             else
                 NewState = {AdjoinList State [damage#NewDamage]}
@@ -1340,7 +1501,7 @@ in
     fun{SayPassingSonar ID Answer State}
         Rand RandomPos
     in
-        if(State.damage == Input.maxDamage) then %the submarine is already dead
+        if(State.damage >= Input.maxDamage) then %the submarine is already dead
             ID = nil
             Answer = null
             State
@@ -1370,7 +1531,8 @@ in
     fun{SayAnswerSonar ID Answer State}
         {System.show 'The player ' #State.id.id# ' has detected an enemy around the position ' #Answer# 'thanks to its sonar'}
 
-        
+        {System.show 'ID.id = ' #ID.id}
+        {System.show 'State.id.id = ' #State.id.id}
         if(ID.id == State.id.id) then
             {System.show 'Il ne se cherche pas dans sa propre liste d ennemis'}
             State
@@ -1490,7 +1652,7 @@ in
         end
     in
         {NewPort Stream Port}
-        InitialState = state(id: id(id:ID color:Color name:'JoueurMedium'#ID)
+        InitialState = state(id: id(id:ID color:Color name:'JoueurMedium')
                             position: pt(x:1 y:1) 
                             lastPositions: nil 
                             direction: east

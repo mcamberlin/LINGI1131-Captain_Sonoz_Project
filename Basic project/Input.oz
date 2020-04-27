@@ -64,7 +64,7 @@ in
 
    %%%% Style of game %%%%
 
-      IsTurnByTurn = true
+      IsTurnByTurn = false
 
    %%%% Description of the map %%%%
 
@@ -91,7 +91,7 @@ in
 
    %%%% Surface time/turns %%%%
 
-      TurnSurface = 3
+      TurnSurface = 1
 
    %%%% Number of load for each item %%%%
 

@@ -176,7 +176,8 @@ in
         State = current state of the submarine
     */
     fun{Dive State}
-        {AdjoinList State [dive#true]}
+        {System.show 'The player ' #State.id.id# 'dives'}
+        State
     end
 
     /** ChargeItem
@@ -322,7 +323,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
             KindFire = mine(Position) 
-            
+        /*
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
@@ -342,7 +343,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = sonar
-
+        */
         else 
             ID = State.id
             KindFire = null
@@ -552,7 +553,7 @@ in
         false otherwise
     */
     fun{SayPassingDrone Drone ID Answer State}
-        if(State.damage == Input.maxDamage) then %the submarine is already dead
+        if(State.damage >= Input.maxDamage) then %the submarine is already dead
             ID = nil
             Answer = nil
             State
@@ -622,7 +623,7 @@ in
     fun{SayPassingSonar ID Answer State}
         Rand RandomPos
     in
-        if(State.damage == Input.maxDamage) then %the submarine is already dead
+        if(State.damage >= Input.maxDamage) then %the submarine is already dead
             ID = nil
             Answer = nil
             State
@@ -826,12 +827,9 @@ in
         InitialState
     in
         {NewPort Stream Port}
-        InitialState = state(id: id(id:ID color:Color name:'JoueurBasic'#ID) 
+        InitialState = state(id: id(id:ID color:Color name:'JoueurBasic') 
                             position: pt(x:1 y:1) 
                             lastPositions: nil 
-                            direction: east
-                            surface: true
-                            dive: false 
                             damage:0
                             loads: loads(mine:0 missile:0 drone:0 sonar:0)
                             weapons: weapons(mine:0 missile:0 drone:0 sonar:0)

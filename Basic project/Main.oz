@@ -514,68 +514,74 @@ define
             %2
             %if it's the first round or the submarine is just going to dive on the previous round
             elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then 
-                NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
+                local
+                    NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
                 in
-                {System.show '%2.'}
-                {Send CurrentPlayer.port dive}
-                NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
+                    {System.show '%2.'}
+                    {Send CurrentPlayer.port dive}
+                    NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
 
-                %3. Ask the direction 
-                {System.show '%3.'}
-                {Send NewPlayerState.port move(ID Position Direction)}
-                {Wait ID} {Wait Position} {Wait Direction}
-                {System.show 'The State of the player is '#NewPlayerState}
-                if(Direction == surface) then
-                    %4. the player want to go at surface 
-                    {System.show '%4.'}
-                    NewPlayerStateSurface = {AdjoinList CurrentPlayer [turnAtSurface#1]}
-                    NewPlayersState = {Change GameState.playersState Index NewPlayerStateSurface }
-                    NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
-                    {Broadcast PLAYER_PORTS saySurface(ID)}
-                    {Send GUIPORT surface(ID)}
-                    {System.show '-------------------Fin du tour pour le joueur '#Index}
-                    {InLoopTurnByTurn NewGameState I+1}
-                else
-                    %5. the player want to move to a direction
-                    {System.show '%5.'}
-                    {Broadcast PLAYER_PORTS sayMove(ID Direction)}
-                    {Send GUIPORT movePlayer(ID Position)}
-                    %6. the player charge an item
-                    {System.show '%6.'}
-                    ID KindItem
-                    in
-                    {Send NewPlayerState.port chargeItem(ID KindItem)}
-                    {Wait ID} {Wait KindItem}
-                    if KindItem\=null then
-                        {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
-                    end
-                    %7. the player fire the item
-                    {System.show '%7.'}
-                    local ID KindFire
-                    in
-                        {Send NewPlayerState.port fireItem(ID KindFire)}
-                        {Wait ID} {Wait KindFire}
-                        {System.show 'KindFire is '#KindFire}
+                    %3. Ask the direction 
+                    {System.show '%3.'}
+                    {Send NewPlayerState.port move(ID Position Direction)}
+                    {Wait ID}{Wait Position} {Wait Direction}
 
-                        GameStateFire = {WhichFireItem KindFire ID NewPlayerState GameState}
-                    end
+                    {System.show 'The State of the player is '#NewPlayerState}
+                    if(Direction == surface) then
+                        %4. the player want to go at surface 
+                        {System.show '%4.'}
+                        NewPlayerStateSurface = {AdjoinList CurrentPlayer [turnAtSurface#1]}
+                        NewPlayersState = {Change GameState.playersState Index NewPlayerStateSurface }
+                        NewGameState = {AdjoinList GameState [playersState#NewPlayersState]}
+                        {Broadcast PLAYER_PORTS saySurface(ID)}
+                        {Send GUIPORT surface(ID)}
+                        {System.show '-------------------Fin du tour pour le joueur '#Index}
+                        {InLoopTurnByTurn NewGameState I+1}
+                    else
+                        %5. the player want to move to a direction
+                        {System.show '%5.'}
+                        {Broadcast PLAYER_PORTS sayMove(ID Direction)}
+                        {Send GUIPORT movePlayer(ID Position)}
 
-                    %8. the player can explode a mine after fire a item (GameStateFire)
-                    {System.show '%8.'}
-                    local ID Mine
-                    in
-                        {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
-                        {Wait ID} {Wait Mine}
-                        GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
-                    end
+                        %6. the player charge an item
+                        {System.show '%6.'}
+                        local 
+                            ID_Charge KindItem
+                        in
+                            {Send NewPlayerState.port chargeItem(ID_Charge KindItem)}
+                            {Wait ID_Charge} {Wait KindItem}
+                            if KindItem \= null then
+                                {Broadcast PLAYER_PORTS sayCharge(ID_Charge KindItem)}
+                            end
+                        end
 
-                    NewGameState = GameStateMine
+                        %7. the player fire the item
+                        {System.show '%7.'}
+                        local ID_Fire KindFire
+                        in
+                            {Send NewPlayerState.port fireItem(ID_Fire KindFire)}
+                            {Wait ID_Fire} {Wait KindFire}
+                            {System.show 'KindFire is '#KindFire}
 
-                    {System.show 'Fin du tour pour le joueur' #Index}
-                    {InLoopTurnByTurn NewGameState I+1}
-                    
+                            GameStateFire = {WhichFireItem KindFire ID_Fire NewPlayerState GameState}
+                        end
 
-                end                                   
+                        %8. the player can explode a mine after fire a item (GameStateFire)
+                        {System.show '%8.'}
+                        local ID Mine
+                        in
+                            {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
+                            {Wait ID} {Wait Mine}
+                            GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
+                        end
+
+                        NewGameState = GameStateMine
+
+                        {System.show 'Fin du tour pour le joueur' #Index}
+                        {InLoopTurnByTurn NewGameState I+1}
+
+                    end           
+                end                        
             else
                 {System.show 'probleme dans les conditions turnbyturn'}
                 skip

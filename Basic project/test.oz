@@ -6,6 +6,33 @@ fun{ManhattanDistance Position1 Position2}
     end
 end
 
+fun{ChangeEnemy L ID NewEnemy}
+    case L
+    of H|T then
+        if(H.id == ID) then 
+            NewEnemy|T
+        else
+            H|{ChangeEnemy T ID NewEnemy}
+        end
+    else 
+        nil
+    end
+end
+
+
+fun{Remove L Item}
+    case L
+    of H|T then
+        if (H == Item)  then
+            {Remove T Item}
+        else
+            H|{Remove T Item}
+        end
+    else
+        nil
+    end
+end
+
 fun{Get L I}
     case L
     of nil then nil
@@ -19,31 +46,80 @@ fun{Get L I}
     end
 end
     
-fun{PositionMissile State}
+fun{ExplodeMine State ?Enemy}
 
-    fun{Increment Position Min Max} 
-        case Position
-        of pt(x:0 y:Y) then
-            if(Min =< Max) then
-                pt(x:Min y:Y) | {Increment Position Min+1 Max}
+    /** SameY
+    @pre 
+        Y = the y position to compare
+        List = list of mines
+    @post
+        return a list of mine that are on the column Y
+    */
+    fun{NearY Y List}
+        case List
+        of H|T then 
+            if(H.y == Y orelse H.y == Y-1 orelse H.y == Y+1) then
+                H|{NearY Y T}
             else
-                nil
-            end
-        [] pt(x:X y:0) then
-            if(Min =<Max) then
-                pt(x:X y:Min) |{Increment Position Min+1 Max}
-            else
-                nil
+                {NearY Y T}
             end
         else
             nil
         end
-    end  
+    end
 
-    fun{TooClose L State} 
-        case L
+    /** SameX
+    @pre 
+        X = the x position to compare
+        List = list of mines
+    @post
+        return a list of mine that are on the row X
+    */
+    fun{NearX X List}
+        case List
+        of H|T then 
+            if(H.x == X orelse H.x == X-1 orelse H.x == X+1) then
+                H|{NearX X T}
+            else
+                {NearX X T}
+            end
+        else
+            nil
+        end
+    end
+
+    
+    /** ReachableByMine
+    @pre
+        EnemyPosition = presice position of the enemy
+        List = list of mines
+    @post
+        return a list mines able to damage the enemy located in EnemyPosition
+    */
+    fun{ReachableByMine EnemyPosition List}
+        case List
         of H|T then
-            if( {ManhattanDistance H State.position} > 1 andthen {ManhattanDistance H State.position} >1 )then %andthen {IsPositionOnMap H} ) then
+            %Exploding the mine H can damage the enemy
+            if( {ManhattanDistance H EnemyPosition}  <2) then
+                H|{ReachableByMine EnemyPosition T}
+            else
+                {ReachableByMine EnemyPosition T}
+            end
+        else
+            nil
+        end
+    end
+
+    /** TooClose
+    @pre 
+        List = list of mines
+    @post
+        return a list of mines where the mines able to damage ourself have been removed
+    */
+    fun{TooClose List State} 
+        case List
+        of H|T then
+            if( {ManhattanDistance H State.position} >1  ) then
                 H|{TooClose T State}
             else
                 {TooClose T State}
@@ -52,8 +128,14 @@ fun{PositionMissile State}
             nil
         end
     end 
-
-    fun{GetRandomPosition L}
+    
+    /** GetRandomMine
+    @pre 
+        L = list of mines
+    @post
+        return randomly a mine in L
+    */
+    fun{GetRandomMine L}
         fun{Length L Acc}
             case L 
             of H|T then {Length T Acc+1}
@@ -61,65 +143,134 @@ fun{PositionMissile State}
                 Acc
             end
         end
+        Longueur
     in  
-        {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+        Longueur = {Length L 0}
+        if(Longueur >0) then
+            {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+        else
+            nil
+        end
     end
 
-    fun{RecursivePositionMissile List State}
+    /** RecursiveExplodeMine
+    @pre
+        List = list of enemies
+        State = state of the current player
+        Enemy = unbound
+    @post
+        bound Enemy to the enemy supposed to be fired
+        return a position of mine to explode without damaging ourself 
+    */
+    fun{RecursiveExplodeMine List State ?Enemy }
         case List              
         of enemy(id:I position: P)|T then
             case P 
             of pt(x:0 y:0) then
-                {RecursivePositionMissile T State}
-
+                {RecursiveExplodeMine T State ?Enemy }
             [] pt(x:0 y:Y) then
-                local L1 L2 DeltaX DeltaY MinX MaxX in
-                    DeltaY = {Abs State.position.y - Y} 
-                    DeltaX = 4 - DeltaY 
+                L1 L2 Mine in   
 
-                    if(DeltaX<0) then 
-                        {RecursivePositionMissile T State}
-                    else
-                        
-                        MinX = State.position.x - DeltaX
-                        MaxX = State.position.x + DeltaX
-
-                        L1 = {Increment pt(x:0 y:Y) MinX MaxX }
-                        L2 = {TooClose L1 State}
-                        {GetRandomPosition L2}
-                    end
+                %1. return a list of mines in the column Y
+                L1 = {NearY Y State.mines}
+                {Browse 'L1'}
+                {Browse L1}
+                {Delay 3000}
+                %2. remove those that are too close of me
+                L2 = {TooClose L1 State}
+                {Browse 'L2'}
+                {Browse L2}
+                {Delay 3000}
+                %3. select randomly one to explode
+                Mine = {GetRandomMine L2}
+                {Browse 'Mine'}
+                {Browse Mine}
+                {Delay 3000}
+                
+                if(Mine == nil) then
+                    {RecursiveExplodeMine T State Enemy}
+                else
+                    %4. reset position of the enemy
+                    Enemy = enemy(id:I position: P)
+                    Mine                        
                 end
 
             []pt(x:X y:0) then
-                local L1 L2 DeltaX DeltaY MinY MaxY in
-                    DeltaX = {Abs State.position.x - X} 
-                    DeltaY = 4 - DeltaX 
-                    if(DeltaY <0) then
-                        {RecursivePositionMissile T State}
-                    else
-                        
-                        MinY = State.position.y - DeltaY
-                        MaxY = State.position.y + DeltaY
-
-                        L1 = {Increment pt(x:X y:0) MinY MaxY }
-                        L2 = {TooClose L1 State}
-                        {GetRandomPosition L2}
-                    end
+                L1 L2 Mine in 
+                
+                %1. return a list of mines in the row X
+                L1 = {NearX X State.mines}
+                %2. remove those that are too close of me 
+                L2 = {TooClose L1 State}
+                %3. select randomly one to explode
+                Mine = {GetRandomMine L2}                 
+                
+                if(Mine == nil) then
+                    {RecursiveExplodeMine T State Enemy}
+                else
+                    %4. reset position of the enemy
+                    Enemy = enemy(id:I position: P)
+                    Mine                        
                 end
-            else /* Les Deux sont connues */
-                P
+
+            else /** Both coordinates of the enemy are known */
+                L1 L2 Mine in 
+                %1. return a list of mines able to damage the Enemy
+                L1 = {ReachableByMine P State.mines}
+                %2. remove those that are too close of me 
+                L2 = {TooClose L1 State}
+                %3. select randomly one to explode
+                Mine = {GetRandomMine L2}                 
+                
+                if(Mine == nil) then
+                    {RecursiveExplodeMine T State Enemy}
+                else
+                    %4. reset position of the enemy
+                    Enemy = enemy(id:I position: P)
+                    Mine                        
+                end
             end
         else
+            Enemy = null
             null
         end
     end
     
 in
-    {RecursivePositionMissile State.enemies State}
+    {RecursiveExplodeMine State.enemies State ?Enemy}
 end
 
-declare
-L = enemy(id:1 position:pt(x:0 y:0)) | enemy(id:2 position:pt(x:0 y:0)) | enemy(id:1 position:pt(x:3 y:0)) | nil
-State = state(position:pt(x:8 y:4) enemies: L)
 
-{Browse {PositionMissile State}}
+fun{FireMine ID Mine State}
+    TargetMine Enemy
+in
+        
+    TargetMine = {ExplodeMine State ?Enemy}
+    {Wait Enemy}
+
+    if(TargetMine \= null ) then
+        NewEnemy NewEnemies NewMines NewState in 
+        NewEnemy = {AdjoinList Enemy [position# pt(x:0 y:0)]}
+        NewEnemies = {ChangeEnemy State.enemies Enemy.id NewEnemy}
+        NewMines = {Remove State.mines TargetMine}
+        NewState = {AdjoinList State [mines#NewMines enemies#NewEnemies]}
+        ID = State.id
+        Mine = TargetMine
+        NewState
+    else % None mine to place
+        Mine = null
+        ID = State.id
+        State
+    end
+end
+
+
+
+declare
+M = pt(x:5 y:2) | pt(x:10 y:10) | pt(x:10 y:10) | pt(x:10 y:10) | nil
+L = enemy(id:1 position:pt(x:5 y:0)) | enemy(id:2 position:pt(x:0 y:1)) | enemy(id:1 position:pt(x:5 y:2)) | nil
+
+State = state(position:pt(x:8 y:4) enemies: L mines: M)
+local Enemy in
+{Browse {ExplodeMine State ?Enemy}}
+end
