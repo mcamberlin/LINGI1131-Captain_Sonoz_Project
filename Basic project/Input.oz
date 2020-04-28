@@ -151,8 +151,8 @@ define
       LongList
       Ratio
    in
-      Ratio = 40 div 100 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
-      NIslands = NRow * NColumn * Ratio %by default 10 percent of the map is an island
+      Ratio = 0.25 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
+      NIslands = NIslands = {FloatToInt {IntToFloat NRow}  * {IntToFloat NColumn} * Ratio } %by default 10 percent of the map is an island
       Islands = {ListIsland NIslands}
 
       LongList = {LineGenerator 1 Islands}
@@ -164,13 +164,14 @@ in
 
    %%%% Style of game %%%%
 
-      IsTurnByTurn = false
+      IsTurnByTurn = true
 
    %%%% Description of the map %%%%
 
-      NRow = 10
+      NRow = 15
       NColumn = 10
 
+      /*
       Map = [[0 0 0 0 0 0 0 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]
       [0 0 0 1 1 0 0 0 0 0]
@@ -181,34 +182,34 @@ in
       [0 0 1 1 0 0 1 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]]
-      %Map = {MapGenerator NRow NColumn}
+      */
+      Map = {MapGenerator NRow NColumn}
 
-      %Map = {MapGenerator NRow NColumn}
+
 
    %%%% Players description %%%%
-
-      NbPlayer = 2
-      Players = [player018basic player018hard]
-      Colors = [orange black]
+      NbPlayer = 4
+      Players = [player018basic player018basic player018medium player018hard]
+      Colors = [white yellow orange red]
       MaxDamage = 5
 
    %%%% Surface time/turns %%%%
 
-      TurnSurface = 1
+      TurnSurface = 2
 
    %%%% Number of load for each item %%%%
 
-      Missile = 2
+      Missile = 1
       Mine = 2
-      Sonar = 2
-      Drone = 2
+      Sonar = 1
+      Drone = 1
 
    %%%% Distances of placement %%%%
 
       MinDistanceMine = 1
       MaxDistanceMine = 2
       MinDistanceMissile = 1
-      MaxDistanceMissile = 4
+      MaxDistanceMissile = 6
 
    %%%% Thinking parameters (only in simultaneous) %%%%
 
@@ -218,6 +219,5 @@ in
    %%%% Waiting time for the GUI between each effect %%%%
 
       GUIDelay = 500 %ms
-
 
 end

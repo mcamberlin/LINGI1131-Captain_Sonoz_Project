@@ -296,9 +296,15 @@ in
     */
     fun{PositionMine Position}
         Pos XMine YMine DeltaX DeltaY CondX CondY in 
+
         %Delta 
-        DeltaX = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
-        DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        DeltaX = {OS.rand} mod (Input.maxDistanceMine + 1)
+        if DeltaX < Input.minDistanceMine then
+            DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-DeltaX)
+        else
+            DeltaY = {OS.rand} mod (Input.maxDistanceMine-DeltaX)
+        end
+        
         %Cond to know position or negative
         if ({OS.rand} mod 2) == 1 then CondX = ~1
         else
@@ -638,12 +644,11 @@ in
                         end
                     end
                 else /* Les Deux sont connues */
-                    if( {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Input.map}} ) then
+                    if( {ManhattanDistance P State.position} < MaxDistanceMissile andthen {ManhattanDistance P State.position} > MinDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Map}} ) then
                         Enemy = enemy(id:I position: P)
                         P  
                     else
-                        Enemy = null
-                        null
+                        {RecursivePositionMissile T State ?Enemy }
                     end
                 end
             else
@@ -1556,7 +1561,7 @@ in
         end
     in
         {NewPort Stream Port}
-        InitialState = state(id: id(id:ID color:Color name:'JoueurMedium')
+        InitialState = state(id: id(id:ID color:Color name:'JoueurHard')
                             position: pt(x:1 y:1) 
                             lastPositions: nil 
                             direction: east

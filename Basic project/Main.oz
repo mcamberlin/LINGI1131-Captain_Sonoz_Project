@@ -53,6 +53,13 @@ define
         end
     end
 
+    /** Broadcast
+    @pre
+        PLAYER_PORTS = list of each port representing a player
+        M = message to broacast
+    @post
+        Send the message M on every port of PLAYER_PORTS
+    */
     proc{Broadcast PLAYER_PORTS M}
         case PLAYER_PORTS
         of H|T then
@@ -63,13 +70,18 @@ define
         end
     end
 
+    /** GameState
+    @pre 
+        Gamestate = current state of the game
+    @post
+        Show details about GameState
+    */
     proc{Print GameState}
         proc{PrintPlayer PlayersState}
             case PlayersState 
             of H|T then 
                 {System.show 'Port = ' #H.port}
                 {System.show 'Alive = ' #H.alive}
-                {System.show 'IsAtSurface = ' #H.isAtSurface}
                 {System.show 'TurnAtSurface = ' #H.turnAtSurface}
                 {PrintPlayer T}
             else 
@@ -83,6 +95,7 @@ define
         {System.show 'nbPlayersAlive =  '#GameState.nbPlayersAlive}
         {PrintPlayer GameState.playersState} 
     end
+    
     /** DisplayWinner
             @pre 
                 PlayersState = liste de playerState
@@ -197,7 +210,6 @@ define
                     NewPlayerState = playerState(
                                                 port: {Get PLAYER_PORTS Acc}
                                                 alive:true 
-                                                isAtSurface:true 
                                                 turnAtSurface:Input.turnSurface
                                                 )
                     NewPlayerState | {StartPlayers NbPlayer-1 Acc+1}
@@ -500,7 +512,7 @@ define
                 {InLoopTurnByTurn GameState I+1}          
             
             %1                   
-            elseif (CurrentPlayer.turnAtSurface \= Input.turnSurface) then %the player can't play
+            elseif (CurrentPlayer.turnAtSurface < Input.turnSurface) then %the player can't play
             
                 NewPlayerState NewPlayersState NewGameState in
                 NewPlayerState = {AdjoinList CurrentPlayer [turnAtSurface#(CurrentPlayer.turnAtSurface +1)]}
@@ -513,18 +525,18 @@ define
             %if it's the first round or the submarine is just going to dive on the previous round
             elseif(I=<Input.nbPlayer orelse CurrentPlayer.turnAtSurface == Input.turnSurface) then 
                 local
-                    NewPlayerState NewPlayersState NewGameState ID Position Direction GameStateFire GameStateMine NewPlayerStateSurface
+                    ID Position Direction NewPlayersState NewGameState  GameStateFire GameStateMine NewPlayerStateSurface
                 in
                     {System.show '%2.'}
                     {Send CurrentPlayer.port dive}
-                    NewPlayerState = {AdjoinList CurrentPlayer [isAtSurface #false]}
+
 
                     %3. Ask the direction 
                     {System.show '%3.'}
-                    {Send NewPlayerState.port move(ID Position Direction)}
+                    {Send CurrentPlayer.port move(ID Position Direction)}
                     {Wait ID}{Wait Position} {Wait Direction}
 
-                    {System.show 'The State of the player is '#NewPlayerState}
+                    {System.show 'The State of the player is '#CurrentPlayer}
                     if(Direction == surface) then
                         %4. the player want to go at surface 
                         {System.show '%4.'}
@@ -546,7 +558,7 @@ define
                         local 
                             ID_Charge KindItem
                         in
-                            {Send NewPlayerState.port chargeItem(ID_Charge KindItem)}
+                            {Send CurrentPlayer.port chargeItem(ID_Charge KindItem)}
                             {Wait ID_Charge} {Wait KindItem}
                             if KindItem \= null then
                                 {Broadcast PLAYER_PORTS sayCharge(ID_Charge KindItem)}
@@ -557,20 +569,20 @@ define
                         {System.show '%7.'}
                         local ID_Fire KindFire
                         in
-                            {Send NewPlayerState.port fireItem(ID_Fire KindFire)}
+                            {Send CurrentPlayer.port fireItem(ID_Fire KindFire)}
                             {Wait ID_Fire} {Wait KindFire}
                             {System.show 'KindFire is '#KindFire}
 
-                            GameStateFire = {WhichFireItem KindFire ID_Fire NewPlayerState GameState}
+                            GameStateFire = {WhichFireItem KindFire ID_Fire CurrentPlayer GameState}
                         end
 
                         %8. the player can explode a mine after fire a item (GameStateFire)
                         {System.show '%8.'}
                         local ID Mine
                         in
-                            {Send NewPlayerState.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
+                            {Send CurrentPlayer.port fireMine(ID Mine)} %Mine = position of the mine NOT mine(Position)
                             {Wait ID} {Wait Mine}
-                            GameStateMine = {ExplodeMine Mine ID NewPlayerState GameStateFire}
+                            GameStateMine = {ExplodeMine Mine ID CurrentPlayer GameStateFire}
                         end
 
                         NewGameState = GameStateMine
@@ -808,7 +820,7 @@ define
         @post: return a new GameState
 
      */
-     proc{ExplodeMineSimu Mine ID PortPlayer}
+    proc{ExplodeMineSimu Mine ID PortPlayer}
         proc{RecursiveExplodeMine Mine ID ListPort PortPlayer}
             case ListPort
             of H|T  then

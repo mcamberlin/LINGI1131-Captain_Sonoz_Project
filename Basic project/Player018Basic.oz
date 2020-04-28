@@ -100,23 +100,6 @@ in
             end
         end
 
-        /** Last
-        @pre 
-            L = list
-        @post
-            return the last element of the list L
-        */
-        fun{Last L}
-            fun{RLast L Acc}
-                case L 
-                of nil then Acc
-                []H|T then {RLast T H}
-                end
-            end
-        in
-            {RLast L nil}
-        end
-
         NewDirection
         NewPosition
         NewState
@@ -323,7 +306,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
             KindFire = mine(Position) 
-        /*
+        
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
@@ -343,7 +326,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = sonar
-        */
+
         else 
             ID = State.id
             KindFire = null
@@ -678,8 +661,12 @@ in
     fun{PositionMine Position}
         Pos XMine YMine DeltaX DeltaY CondX CondY in 
         %Delta 
-        DeltaX = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
-        DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-Input.minDistanceMine)
+        DeltaX = {OS.rand} mod (Input.maxDistanceMine + 1)
+        if DeltaX < Input.minDistanceMine then
+            DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-DeltaX)
+        else
+            DeltaY = {OS.rand} mod (Input.maxDistanceMine-DeltaX)
+        end
         %Cond to know position or negative
         if ({OS.rand} mod 2) == 1 then CondX = ~1
         else
@@ -705,9 +692,14 @@ in
         give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position*/
     fun{PositionMissile Position}
         Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
-        %Delta 
-        DeltaX = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
-        DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-Input.minDistanceMissile)
+        %Delta        
+        DeltaX = {OS.rand} mod (Input.maxDistanceMissile + 1)
+        if DeltaX < Input.minDistanceMissile then
+            DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-DeltaX)
+        else
+            DeltaY = {OS.rand} mod (Input.maxDistanceMissile-DeltaX)
+        end
+
         %Cond to know position or negative
         if ({OS.rand} mod 2) == 1 then CondX = ~1
         else
