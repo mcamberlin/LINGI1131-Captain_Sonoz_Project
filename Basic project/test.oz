@@ -1,101 +1,146 @@
 declare
-fun{MapGenerator NRow NColumn}
-    fun{LineGenerator Acc Islands}
-        if(Acc=<NRow *NColumn) then
-            {Contains Acc Islands} | {LineGenerator Acc+1 Islands}            
-        else
-            nil
-        end
-    end
 
-    /**
-    @pre 
-        return a list of random number representing
+   /** IsIsland
+        X, Y = position on the map
+        if the point(X,Y) is an island then true    
+        else false
     */
-    fun{ListIsland NIslands}
-        if(NIslands >0) then
-            Pos in 
-                Pos = {OS.rand}  mod (NRow * NColumn) 
-                if(Pos == 0) then 
-                    1| {ListIsland NIslands -1}
+    fun{IsIsland X Y Map}
+        case Map
+        of H1|T1 then 
+            if(X ==1) then
+                case H1 
+                of H2|T2 then 
+                    if(Y==1) then
+                        if(H2 == 1) then %Sur une ile
+                            true
+                        else
+                            false
+                        end
+                    else
+                        {IsIsland X Y-1 T2|T1}
+                    end
                 else
-                    Pos|{ListIsland NIslands-1}
+                    false
                 end
-        else
-            nil
-        end
-    end
-    
-    fun{Contains Pos Islands}
-        case Islands
-        of H |T then 
-            if(H == Pos) then
-                1
             else
-                {Contains Pos T}
+                {IsIsland X-1 Y T1}
             end
         else
-            0
-        end 
-    end
-    
-    fun{Append L I}
-        case L 
-        of H|nil then
-            local L1 in
-                L1 = H|I
-                L1 | {Append nil I}
-            end
-        []H|T then
-            H|{Append T I}
-        else
-            nil
+            false
         end
     end
 
-
-    fun{LineToMatrix LL AccX L}
-        fun{Append L I}
-            case L 
-            of H|nil then
-                H|I|{Append nil I}
-
-            []H|T then
-                H|{Append T I}
+    /** IsOnMap
+    @pre
+        (X, Y) coordonnates
+    @post
+        true if the Coordonates are on the map
+        false otherwise    
+    */
+    fun{IsOnMap X Y}
+        if(X=<NRow andthen X>0) then
+            if(Y=<NColumn andthen Y>0) then
+                true
             else
-                nil
-            end
-        end
-    in
-        case LL
-        of H|T then
-            if(AccX == 1) then
-                {LineToMatrix T AccX+1 H}
-            elseif(AccX ==2) then
-                {LineToMatrix T AccX+1 {Append [L] H}}
-            elseif(AccX <NRow) then
-                {LineToMatrix T AccX+1 {Append L H}}
-            else%if(AccX == NRow) then
-                {Append L H} | {LineToMatrix T 1  1}
+                false
             end
         else
-            nil
+            false
         end
     end
-    
-    NIslands
-    Islands
-    LongList
-    Ratio
-in
-    Ratio = 25.0 / 100.0 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
-    NIslands = {FloatToInt {IntToFloat NRow}  * {IntToFloat NColumn} * Ratio }
-    Islands = {ListIsland NIslands}
 
-    LongList = {LineGenerator 1 Islands}
+    /** IsPositionOnMap
+    @pre
+        Position
+    @post
+        true if the Position is on the map
+        false otherwise    
+    */
+    fun{IsPositionOnMap Position}
+        {IsOnMap Position.x Position.y}
+    end
 
-    {LineToMatrix LongList 1 1}
+fun{PositionMine Position}
+    Pos XMine YMine DeltaX DeltaY CondX CondY in 
+    %Delta 
+    DeltaX = {OS.rand} mod (MaxDistanceMine + 1)
+    if DeltaX < MinDistanceMine then
+        DeltaY = MinDistanceMine + {OS.rand} mod (MaxDistanceMine-DeltaX)
+    else
+        DeltaY = {OS.rand} mod (MaxDistanceMine-DeltaX)
+    end
+    %Cond to know position or negative
+    if ({OS.rand} mod 2) == 1 then CondX = ~1
+    else
+        CondX=1
+    end
+    if ({OS.rand} mod 2) == 1 then CondY = ~1
+    else
+        CondY=1
+    end
+
+    XMine = Position.x + CondX * DeltaX
+    YMine = Position.y + CondY * DeltaY
+    Pos = pt(x:XMine y:YMine)
+    if {IsOnMap Pos.x Pos.y} andthen {Not {IsIsland Pos.x Pos.y Map} } then 
+        Pos
+    else 
+        {PositionMine Position}
+    end
+
 end
-declare
-NIslands = {FloatToInt {IntToFloat 10}  * {IntToFloat 10} * 0.33333 }
-{Browse NIslands}
+
+/**PositionMissile
+    give a random position that is bounded by minDistanceMissile and maxDistanceMissile around Position*/
+fun{PositionMissile Position}
+    Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
+    %Delta        
+    DeltaX = {OS.rand} mod (MaxDistanceMissile + 1)
+    if DeltaX < MinDistanceMissile then
+        DeltaY = MinDistanceMissile + {OS.rand} mod (MaxDistanceMissile-DeltaX +1)
+    elseif DeltaX == MaxDistanceMissile then
+        DeltaY=0
+    else
+        DeltaY = {OS.rand} mod (MaxDistanceMissile-DeltaX)
+    end
+
+    %Cond to know position or negative
+    if ({OS.rand} mod 2) == 1 then CondX = ~1
+    else
+        CondX=1
+    end
+    if ({OS.rand} mod 2) == 1 then CondY = ~1
+    else
+        CondY=1
+    end
+
+    XMissile = Position.x + CondX * DeltaX
+    YMissile = Position.y + CondY * DeltaY
+    Pos = pt(x:XMissile y:YMissile)
+    if {IsOnMap Pos.x Pos.y} then Pos
+    else 
+        {PositionMissile Position}
+    end
+
+end
+MinDistanceMine = 1
+MaxDistanceMine = 2
+MinDistanceMissile = 1
+MaxDistanceMissile = 6
+      NRow = 10
+      NColumn = 10
+
+
+Map = [[0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 1 1 0 0 0 0 0]
+      [0 0 1 1 0 0 1 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 1 0 0 1 1 0 0]
+      [0 0 1 1 0 0 1 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]
+      [0 0 0 0 0 0 0 0 0 0]]
+
+{Browse {PositionMissile pt(x:5 y:5)} }

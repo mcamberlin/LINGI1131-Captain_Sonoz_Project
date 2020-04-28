@@ -299,12 +299,14 @@ in
 
         %Delta 
         DeltaX = {OS.rand} mod (Input.maxDistanceMine + 1)
-        if DeltaX < Input.minDistanceMine then
+        if DeltaX == Input.maxDistanceMine then
+            DeltaY=0
+        elseif DeltaX < Input.minDistanceMine then
             DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-DeltaX)
         else
             DeltaY = {OS.rand} mod (Input.maxDistanceMine-DeltaX)
         end
-        
+
         %Cond to know position or negative
         if ({OS.rand} mod 2) == 1 then CondX = ~1
         else
@@ -436,7 +438,7 @@ in
         in  
             Longueur = {Length L 0}
             if(Longueur >0) then
-                {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+                {Get L (1+{OS.rand} mod (Longueur) ) }
             else
                 nil
             end
@@ -586,8 +588,14 @@ in
                     Acc
                 end
             end
+            Longueur
         in  
-            {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+            Longueur = {Length  L 0}
+            if(Longueur == 0) then
+                null
+            else
+                {Get L (1+{OS.rand} mod ({Length L 0}) ) }
+            end
         end
         /** RecursivePositionMissile
         @pre
@@ -644,7 +652,7 @@ in
                         end
                     end
                 else /* Les Deux sont connues */
-                    if( {ManhattanDistance P State.position} < MaxDistanceMissile andthen {ManhattanDistance P State.position} > MinDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Map}} ) then
+                    if( {ManhattanDistance P State.position} < Input.maxDistanceMissile andthen {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Map}} ) then
                         Enemy = enemy(id:I position: P)
                         P  
                     else

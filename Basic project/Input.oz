@@ -151,7 +151,7 @@ define
       LongList
       Ratio
    in
-      Ratio = 0.25 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
+      Ratio = 0.10 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
       NIslands = NIslands = {FloatToInt {IntToFloat NRow}  * {IntToFloat NColumn} * Ratio } %by default 10 percent of the map is an island
       Islands = {ListIsland NIslands}
 
@@ -183,7 +183,7 @@ in
       [0 0 0 0 0 0 0 0 0 0]
       [0 0 0 0 0 0 0 0 0 0]]
       */
-      Map = {MapGenerator NRow NColumn}
+      Map = {MapGenerator NColumn NRow}
 
 
 

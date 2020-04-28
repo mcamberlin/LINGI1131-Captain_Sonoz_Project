@@ -414,8 +414,7 @@ in
     fun{SayCharge ID KindItem State}
         if KindItem == null then {System.show 'the player cannot charge an item'}
         else
-            {System.show 'The player charged a'}
-            {System.show KindItem}
+            {System.show 'The player charged a ' #KindItem}
         end
         State
     end
@@ -662,7 +661,9 @@ in
         Pos XMine YMine DeltaX DeltaY CondX CondY in 
         %Delta 
         DeltaX = {OS.rand} mod (Input.maxDistanceMine + 1)
-        if DeltaX < Input.minDistanceMine then
+        if DeltaX == Input.maxDistanceMine then
+            DeltaY=0
+        elseif DeltaX < Input.minDistanceMine then
             DeltaY = Input.minDistanceMine + {OS.rand} mod (Input.maxDistanceMine-DeltaX)
         else
             DeltaY = {OS.rand} mod (Input.maxDistanceMine-DeltaX)
@@ -694,7 +695,9 @@ in
         Pos XMissile YMissile DeltaX DeltaY CondX CondY in 
         %Delta        
         DeltaX = {OS.rand} mod (Input.maxDistanceMissile + 1)
-        if DeltaX < Input.minDistanceMissile then
+        if DeltaX == Input.maxDistanceMissile then
+            DeltaY=0
+        elseif DeltaX < Input.minDistanceMissile then
             DeltaY = Input.minDistanceMissile + {OS.rand} mod (Input.maxDistanceMissile-DeltaX)
         else
             DeltaY = {OS.rand} mod (Input.maxDistanceMissile-DeltaX)
