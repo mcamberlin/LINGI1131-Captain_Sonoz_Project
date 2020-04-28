@@ -241,7 +241,7 @@ in
 
             if(NewLoad.mine >= Input.mine) then
                 % new mine created: number of loading charges required to create a mine reached
-                NewLoads = {AdjoinList NewLoad [mine#(State.loads.mine - Input.mine)]}
+                NewLoads = {AdjoinList NewLoad [mine#(NewLoad.mine - Input.mine)]}
                 NewWeapons = {AdjoinList State.weapons [mine#(State.weapons.mine+1)]}
                 
                 NewState = {AdjoinList State [weapons#NewWeapons loads#NewLoads]}
@@ -259,7 +259,7 @@ in
 
             if(NewLoad.sonar >= Input.sonar) then 
                 % new sonar created: number of loading charges required to create a sonar reached
-                NewLoads = {AdjoinList NewLoad [sonar#(State.loads.sonar - Input.sonar)]}
+                NewLoads = {AdjoinList NewLoad [sonar#(NewLoad.sonar - Input.sonar)]}
                 NewWeapons = {AdjoinList State.weapons [sonar#(State.weapons.sonar+1)]}
 
                 NewState = {AdjoinList State [weapons#NewWeapons loads#NewLoads]}
@@ -277,7 +277,7 @@ in
 
             if(NewLoad.drone >= Input.drone) then 
                 % new drone created: number of loading charges required to create a drone reached    
-                NewLoads = {AdjoinList NewLoad [drone#(State.loads.drone - Input.drone)]}
+                NewLoads = {AdjoinList NewLoad [drone#(NewLoad.drone - Input.drone)]}
                 NewWeapons = {AdjoinList State.weapons [drone#(State.loads.drone+1)]}
             
                 NewState = {AdjoinList State [weapons#NewWeapons loads#NewLoads]}
