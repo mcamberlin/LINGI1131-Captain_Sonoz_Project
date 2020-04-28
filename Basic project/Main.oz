@@ -931,12 +931,12 @@ define
 
 
                 %7. Charge an item. Braodcast information if a weapon is ready 
-                local ID KindItem %GameStateFire GameStateMine 
+                local ID_Charge KindItem %GameStateFire GameStateMine 
                 in
-                    {Send PortPlayer chargeItem(ID KindItem)}
-                    {Wait ID} {Wait KindItem}
+                    {Send PortPlayer chargeItem(ID_Charge KindItem)}
+                    {Wait ID_Charge} {Wait KindItem}
                     if KindItem \= null then
-                        {Broadcast PLAYER_PORTS sayCharge(ID KindItem)}
+                        {Broadcast PLAYER_PORTS sayCharge(ID_Charge KindItem)}
                     end
                 end
 
@@ -944,12 +944,12 @@ define
                 {Delay Input.thinkMin + {OS.rand} mod (Input.thinkMax-Input.thinkMin)}
 
                 %9. Fire an item. Broadcast information if touched an ennemy
-                local ID KindFire
+                local ID_Fire KindFire
                 in
-                    {Send PortPlayer fireItem(ID KindFire)}
-                    {Wait ID} {Wait KindFire}
+                    {Send PortPlayer fireItem(ID_Fire KindFire)}
+                    {Wait ID_Fire} {Wait KindFire}
                     {System.show 'KindFire is '#KindFire} 
-                    {WhichFireItemSimu KindFire ID PortPlayer}
+                    {WhichFireItemSimu KindFire ID_Fire PortPlayer}
                 end
 
                 %10. Simulate thinking 
