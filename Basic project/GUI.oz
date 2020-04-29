@@ -36,6 +36,8 @@ define
 	StateModification
 
 	UpdateLife
+
+	DrawExplosion
 in
 
 %%%%% Build the initial window and set it up (call only once)
@@ -166,15 +168,99 @@ in
 	in
 		fun{RemoveMine Position}
 			fun{$ Grid State}
-				ID HandleScore Handle Mine Path NewMine
-				in
+				ID HandleScore Handle Mine Path NewMine X Y 
+				HandleExplosion HandleExplosion1 HandleExplosion2 HandleExplosion3 HandleExplosion4 
+				LabelExplosion LabelLittleExplosion1 LabelLittleExplosion2 LabelLittleExplosion3 LabelLittleExplosion4
+				
+			in
 				guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path) = State
 				NewMine = {RmMine Grid Position Mine}
+				pt(x:X y:Y) = Position
+
+				LabelExplosion = label(text:"O" handle:HandleExplosion borderwidth:0.2 relief:raised bg:ID.color ipadx:5 ipady:5)
+
+				LabelLittleExplosion1 = label(text:"o" handle:HandleExplosion1 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+				LabelLittleExplosion2= label(text:"o" handle:HandleExplosion2 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+				LabelLittleExplosion3 = label(text:"o" handle:HandleExplosion3 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+				LabelLittleExplosion4 = label(text:"o" handle:HandleExplosion4 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+
+
+				{Grid.grid configure(LabelExplosion row:X+1 column:Y+1)}
+
+				{Grid.grid configure(LabelLittleExplosion1 row:X column:Y+1)}
+				{Grid.grid configure(LabelLittleExplosion2 row:X+2 column:Y+1)}
+				{Grid.grid configure(LabelLittleExplosion3 row:X+1 column:Y)}
+				{Grid.grid configure(LabelLittleExplosion4 row:X+1 column:Y+2)}
+
+
+				{HandleExplosion 'raise'()}
+
+				{HandleExplosion1 'raise'()}
+				{HandleExplosion2 'raise'()}
+				{HandleExplosion3 'raise'()}
+				{HandleExplosion4 'raise'()}
+
+				{Handle 'raise'()}
+
+
+				{Delay Input.guiDelay}
+				{Grid.grid forget(HandleExplosion)}
+				{Grid.grid forget(HandleExplosion1)}
+				{Grid.grid forget(HandleExplosion2)}
+				{Grid.grid forget(HandleExplosion3)}
+				{Grid.grid forget(HandleExplosion4)}
+
 				guiPlayer(id:ID score:HandleScore submarine:Handle mines:NewMine path:Path)
+
 			end
 		end
 	end
-	
+
+
+	fun{DrawExplosion Position}
+		fun{$ Grid State}
+			ID HandleScore Handle Mine Path LabelExplosion HandleExplosion HandleExplosion1 HandleExplosion2 HandleExplosion3 HandleExplosion4 X Y LabelLittleExplosion
+			LabelLittleExplosion1 LabelLittleExplosion2 LabelLittleExplosion3 LabelLittleExplosion4
+			in
+			guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path) = State
+			pt(x:X y:Y) = Position
+			
+			LabelExplosion = label(text:"X" handle:HandleExplosion borderwidth:0.2 relief:raised bg:ID.color ipadx:5 ipady:5)
+			
+			LabelLittleExplosion1 = label(text:"x" handle:HandleExplosion1 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+			LabelLittleExplosion2= label(text:"x" handle:HandleExplosion2 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+			LabelLittleExplosion3 = label(text:"x" handle:HandleExplosion3 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+			LabelLittleExplosion4 = label(text:"x" handle:HandleExplosion4 borderwidth:0.1 relief:raised bg:ID.color ipadx:5 ipady:5)
+
+
+			{Grid.grid configure(LabelExplosion row:X+1 column:Y+1)}
+
+			{Grid.grid configure(LabelLittleExplosion1 row:X column:Y+1)}
+			{Grid.grid configure(LabelLittleExplosion2 row:X+2 column:Y+1)}
+			{Grid.grid configure(LabelLittleExplosion3 row:X+1 column:Y)}
+			{Grid.grid configure(LabelLittleExplosion4 row:X+1 column:Y+2)}
+
+			{HandleExplosion 'raise'()}
+
+			{HandleExplosion1 'raise'()}
+			{HandleExplosion2 'raise'()}
+			{HandleExplosion3 'raise'()}
+			{HandleExplosion4 'raise'()}
+
+			{Handle 'raise'()}
+
+
+			{Delay Input.guiDelay}
+			{Grid.grid forget(HandleExplosion)}
+			{Grid.grid forget(HandleExplosion1)}
+			{Grid.grid forget(HandleExplosion2)}
+			{Grid.grid forget(HandleExplosion3)}
+			{Grid.grid forget(HandleExplosion4)}
+
+			guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path)
+		end
+	end
+
 	fun{DrawPath Grid Color X Y}
 		Handle LabelPath
 	in
@@ -193,7 +279,7 @@ in
 	in
 		guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path) = State
 		for H in Path.2 do
-	 {RemoveItem Grid H}
+	 		{RemoveItem Grid H}
 		end
 		guiPlayer(id:ID score:HandleScore submarine:Handle mines:Mine path:Path.1|nil)
 	end
@@ -277,7 +363,7 @@ in
 		[] removePlayer(ID)|T then
 			{TreatStream T Grid {RemovePlayer Grid ID State}}
 		[] explosion(ID Position)|T then
-			{TreatStream T Grid State}
+			{TreatStream T Grid {StateModification Grid ID State {DrawExplosion Position}}}
 		[] drone(ID Drone)|T then
 			{TreatStream T Grid State}
 		[] sonar(ID)|T then

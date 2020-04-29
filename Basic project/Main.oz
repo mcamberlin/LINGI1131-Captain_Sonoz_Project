@@ -268,6 +268,7 @@ define
                     Message 
                     in
                     {Send H.port sayMissileExplode(ID Position Message)}
+                    {Send GUIPORT explosion(ID Position)}
                     {Wait Message}
                     {System.show 'A missile has been launched and the message is '#Message}
 
@@ -431,6 +432,7 @@ define
                 else
                     Message in 
                     {Send H.port sayMineExplode(ID Mine Message)}
+
                     
                     {Wait Message}
                     
@@ -468,7 +470,6 @@ define
         if Mine == null then GameState
         else
             GameStateMine = {RecursiveExplodeMine GameState.playersState GameState}
-            {Send GUIPORT removeMine(ID Mine)}
             GameStateMine
         end
     end
@@ -663,6 +664,7 @@ define
                     {RecursiveMissile ID Position T}
                 else
                     {Send H sayMissileExplode(ID Position Message)}
+                    {Send GUIPORT explosion(ID Position)}
                     {Wait Message}
                     {System.show 'A missile has been launched and the message is '#Message}
 

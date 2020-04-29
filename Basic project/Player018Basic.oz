@@ -183,13 +183,11 @@ in
             return a random item (mine,missile, sonar, drone)
         */
         fun{RandomItem}
-            NewItem = {OS.rand} mod 4
+            NewItem = {OS.rand} mod 2
         in
             if(NewItem == 0) then mine
-            elseif(NewItem == 1) then missile
-            elseif(NewItem == 2) then sonar
             else 
-                drone
+                missile
             end
         end
         NewState NewLoad NewWeapons NewLoads NewItem
@@ -235,7 +233,8 @@ in
             else
                 KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]} 
-            end       
+            end  
+        /*         
         [] sonar then 
             %Increase the loads of sonar
             NewLoad = {AdjoinList State.loads [sonar#(State.loads.sonar+1)]}
@@ -271,7 +270,8 @@ in
             else
                 KindItem = null
                 NewState = {AdjoinList State [loads#NewLoad]} 
-            end   
+            end  
+        */ 
         else
             skip
         end 
@@ -306,7 +306,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon mines#NewMines]}
             ID = State.id
             KindFire = mine(Position) 
-        
+        /*
         elseif State.weapons.drone > 0 then
             NewWeapon = {AdjoinList State.weapons [drone#State.weapons.drone-1]}
             NewState = {AdjoinList State [weapons#NewWeapon]}
@@ -326,7 +326,7 @@ in
             NewState = {AdjoinList State [weapons#NewWeapon]}
             ID = State.id
             KindFire = sonar
-
+        */
         else 
             ID = State.id
             KindFire = null

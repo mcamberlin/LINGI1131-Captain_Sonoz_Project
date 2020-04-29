@@ -652,7 +652,7 @@ in
                         end
                     end
                 else /* Les Deux sont connues */
-                    if( {ManhattanDistance P State.position} < Input.maxDistanceMissile andthen {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Map}} ) then
+                    if( {ManhattanDistance P State.position} < Input.maxDistanceMissile andthen {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Input.map}} ) then
                         Enemy = enemy(id:I position: P)
                         P  
                     else

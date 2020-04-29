@@ -249,54 +249,6 @@ in
         {IsOnMap Position.x Position.y}
     end
 
-        /**
-    @pre  
-        L = list of enemies
-    @post
-        Look over the position known of enemies
-        the ID to of the nearest enemy is returned
-        if none positions of enemies is known, then the ID of the last enemy in enemies is returned
-    */
-    fun{NearestEnemy L ID MinX MinY State}
-        case L
-        of enemy(id:I position:P)|T then 
-            DistX DistY in 
-            DistX = {Abs P.x - State.position.x}
-            DistY = {Abs P.y - State.position.y}
-
-            %Both coordinates are known
-            if(P.x \= 0 andthen P.y\= 0) then
-                if(DistX < MinX) then 
-                    {NearestEnemy L I DistX MinY State}
-                elseif(DistY<MinY) then
-                    {NearestEnemy L I MinX DistY State}
-                else
-                    {NearestEnemy T ID MinX MinY State}
-                end
-            %x-coordinate is known
-            elseif(P.x \= 0) then
-                if(DistX < MinX ) then
-                    {NearestEnemy T I DistX MinY State}
-                else
-                    {NearestEnemy T ID MinX MinY State}
-                end
-            %y-coordinate is known
-            elseif(P.y \= 0) then
-                if(DistY < MinY) then
-                    {NearestEnemy T I MinX DistY State}
-                else
-                    {NearestEnemy T ID MinX MinY State}
-                end
-            %None coordinates is known
-            else
-                {NearestEnemy T ID MinX MinY State}
-            end
-        else
-            ID
-        end
-    end
-
-
     /**PositionMine 
     @pre 
         Position
@@ -663,7 +615,7 @@ in
                         end
                     end
                 else /* Les Deux sont connues */
-                    if( {ManhattanDistance P State.position} < Input.maxDistanceMissile andthen {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Map}} ) then
+                    if( {ManhattanDistance P State.position} < Input.maxDistanceMissile andthen {ManhattanDistance P State.position} > Input.minDistanceMissile andthen {ManhattanDistance P State.position} >1  andthen {IsPositionOnMap P} andthen {Not {IsIsland P.x P.y Input.map}} ) then
                         Enemy = enemy(id:I position: P)
                         P  
                     else

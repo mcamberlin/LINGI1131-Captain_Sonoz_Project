@@ -62,9 +62,17 @@ define
 
    GUIDelay
 
-   fun{MapGenerator NRow NColumn}
+   /** MapGenerator 
+   @pre
+      NColumn = numer of columns expected in the map
+      NRow  = number of rows expected in the map
+   @post
+      return a map of NRow * NColumn with the ratio Ratio of islands in the map.
+      Islands are placed randomly on the map
+      */
+   fun{MapGenerator NColumn NRow}
       fun{LineGenerator Acc Islands}
-         if(Acc=<NRow *NColumn) then
+         if(Acc=<NColumn *NRow) then
                {Contains Acc Islands} | {LineGenerator Acc+1 Islands}            
          else
                nil
@@ -78,7 +86,7 @@ define
       fun{ListIsland NIslands}
          if(NIslands >0) then
                Pos in 
-                  Pos = {OS.rand}  mod (NRow * NColumn) 
+                  Pos = {OS.rand}  mod (NColumn * NRow) 
                   if(Pos == 0) then 
                      1| {ListIsland NIslands -1}
                   else
@@ -136,9 +144,9 @@ define
                   {LineToMatrix T AccX+1 H}
                elseif(AccX ==2) then
                   {LineToMatrix T AccX+1 {Append [L] H}}
-               elseif(AccX <NRow) then
+               elseif(AccX <NColumn) then
                   {LineToMatrix T AccX+1 {Append L H}}
-               else%if(AccX == NRow) then
+               else%if(AccX == NColumn) then
                   {Append L H} | {LineToMatrix T 1  1}
                end
          else
@@ -151,8 +159,8 @@ define
       LongList
       Ratio
    in
-      Ratio = 0.10 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NRow*NColumn))
-      NIslands = NIslands = {FloatToInt {IntToFloat NRow}  * {IntToFloat NColumn} * Ratio } %by default 10 percent of the map is an island
+      Ratio = 0.10 % The approximative ratio of islands on the map (Ratio = numberOfIsland/(NColumn*NRow))
+      NIslands = NIslands = {FloatToInt {IntToFloat NColumn}  * {IntToFloat NRow} * Ratio } %by default 10 percent of the map is an island
       Islands = {ListIsland NIslands}
 
       LongList = {LineGenerator 1 Islands}
@@ -168,7 +176,7 @@ in
 
    %%%% Description of the map %%%%
 
-      NRow = 15
+      NRow = 10
       NColumn = 10
 
       /*
@@ -188,9 +196,9 @@ in
 
 
    %%%% Players description %%%%
-      NbPlayer = 4
-      Players = [player018basic player018basic player018medium player018hard]
-      Colors = [white yellow orange red]
+      NbPlayer = 3
+      Players = [player018basic player018medium player018hard]
+      Colors = [white red black ]
       MaxDamage = 5
 
    %%%% Surface time/turns %%%%
@@ -199,7 +207,7 @@ in
 
    %%%% Number of load for each item %%%%
 
-      Missile = 1
+      Missile = 2
       Mine = 2
       Sonar = 1
       Drone = 1
@@ -209,7 +217,7 @@ in
       MinDistanceMine = 1
       MaxDistanceMine = 2
       MinDistanceMissile = 1
-      MaxDistanceMissile = 6
+      MaxDistanceMissile = 4
 
    %%%% Thinking parameters (only in simultaneous) %%%%
 
@@ -218,6 +226,6 @@ in
 
    %%%% Waiting time for the GUI between each effect %%%%
 
-      GUIDelay = 500 %ms
+      GUIDelay = 200 %ms
 
 end
