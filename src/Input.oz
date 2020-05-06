@@ -176,8 +176,8 @@ in
 
    %%%% Description of the map %%%%
 
-      NRow = 10
-      NColumn = 10
+      NRow = 12
+      NColumn = 8
 
       /*
       Map = [[0 0 0 0 0 0 0 0 0 0]
@@ -198,8 +198,8 @@ in
    %%%% Players description %%%%
       NbPlayer = 3
       Players = [player018basic player018medium player018hard]
-      Colors = [white red black ]
-      MaxDamage = 5
+      Colors = [orange red black ]
+      MaxDamage = 7
 
    %%%% Surface time/turns %%%%
 
